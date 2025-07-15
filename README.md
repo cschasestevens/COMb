@@ -1,2 +1,2 @@
-# COMbD
-Comprehensive Observation/analysis of Metabolomics Data (COMbD)
+# COMb
+Comprehensive Observation/analysis of Metabolomics data (COMb)
