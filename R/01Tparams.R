@@ -113,11 +113,11 @@ msT_format <- function( # nolint
     # Format transition list
     ld1[["data"]][["transition_list"]][[1]] <- setNames(ld1[["data"]][["transition_list"]][[1]][ # nolint
       , c(
-        "Molecule.List.Name", "Molecule.Name", "Molecule.Formula",
+        "Molecule.List.Name", "Molecule.Name",
         "Precursor.Mz", "Product.Mz"
       )
     ], c(
-      "synthesis_pathway", "Name", "Formula",
+      "synthesis_pathway", "Name",
       "Precursor(mz)", "Product(mz)"
     ))
     # Merge chromatograms with intensities
@@ -148,15 +148,6 @@ msT_format <- function( # nolint
       ld1[["data"]][["intensities"]][[1]],
       ld1[["data"]][["chromatograms"]][[1]],
       by = c("SampleID", "Name")
-    )
-    ld1[["data"]][["merged"]] <- dplyr::select(
-      dplyr::left_join(
-        ld1[["data"]][["merged"]],
-        ld1[["data"]][["transition_list"]][[1]][
-          , c("Name", "Formula")
-        ],
-        by = "Name"
-      ), "Name", "Formula", "SampleID", everything() # nolint
     )
     # Create index and assign groups
     ld1[["data"]][["merged"]][["ID"]] <- seq.int(
