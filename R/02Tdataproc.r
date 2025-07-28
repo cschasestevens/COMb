@@ -880,54 +880,40 @@ tms_rtshift <- function( # nolint
 #' shift in expected vs. measured retention times.
 #'
 #' @param dat Input standard list.
-#' @param mzrt Input mzrt list containing reference precursor m/z and
-#' retention time columns.
-#' @param intype Input data type: either "Skyline," a list of 2 vectors
-#' containing values separated by commas (default) or "xy," which is
-#' a list of two variables containing vectors of x and y coordinates.
-#' @param xcol X column name.
-#' @param ycol Y column name.
-#' @param comp Compound name to plot.
-#' @param rttol Retention time tolerance window (in minutes).
-#' @param spn Number of points used for peak detection; must be an odd number.
-#' @param snr_type Summary statistic to calculate signal-to-noise ratio
-#' (either "median" [default] or "mean").
-#' @param lab Column containing sample labels.
-#' @param sampid Name of a specific sample for peak integration.
-#' @param mcc Cores to use if not using Windows.
-#' @return A data frame containing the calculated difference between
-#' the expected and measured retention times for a list of reference
+#' @param ref Reference list containing retention times.
+#' @param colcomp Variable containing standard names.
+#' @param colsid Variable containing sample IDs.
+#' @param colrtref Variable containing reference standard retention times.
+#' @param colrtexp Variable containing measured retention times.
+#' @return mzrt scatter plot visualizing differences between
+#' the expected and measured retention times of all reference
 #' standards.
 #' @examples
 #'
-#' # msT_integrate <- function(
-#' #   dat = d1[["merged"]][d1[["merged"]][["Group"]] == "Std_curve", ],
-#' #   comp = "15-HETE",
-#' #   ref = "Std_curve",
-#' #   grp = "Std_curve",
-#' #   sampid = "Stevens_879654_1_cal_8"
-#' # )
+#' # d1 <- tms_mzrt(rt1, rt2)
 #'
 #' @import ggplot2
-#' @import dplyr
-#' @import stringr
-#' @import ggpmisc
-#' @import DescTools
 #' @export
 tms_mzrt <- function( # nolint
-  dat
+  dat,
+  ref,
+  colcomp = "Name",
+  colsid = "SampleID",
+  colrtref = "ref_RT",
+  colrtexp = "X"
 ) {
   # Load data and set parameters
   ld <- dat
+  ld2 <- ref
   ## mzrt plot
   p1 <- ggplot2::ggplot(
     data = ld
   ) +
     ggplot2::geom_point(
-      data = rt3,
+      data = ld2,
       ggplot2::aes(
-        x = rt3[["Name"]],
-        y = rt3[["ref_RT"]]
+        x = ld2[["Name"]],
+        y = ld2[["ref_RT"]]
       ),
       shape = 18,
       size = 2,
@@ -936,7 +922,7 @@ tms_mzrt <- function( # nolint
     ) +
     ggplot2::geom_point(
       ggplot2::aes(
-        x = .data[["Name"]],
+        x = .data[["Name"]], # nolint
         y = .data[["X"]],
         color = .data[["SampleID"]]
       ),
@@ -947,8 +933,369 @@ tms_mzrt <- function( # nolint
     ggplot2::scale_color_manual(values = col_univ()) +
     ms_theme() +
     ggplot2::labs(
-      x = "Retention Time (min.)",
-      y = "Compound Name"
+      x = "Compound Name",
+      y = "Retention Time (min.)"
     )
-  return(p1)
+  return(p1) # nolint
+}
+
+#' Retention Time Correction (Targeted)
+#'
+#' Applies retention time corrections based on observed
+#' differences between expected vs. measured retention times
+#' of reference standards in a targeted assay.
+#'
+#' @param dat Input standard list.
+#' @param ref Reference list containing retention times.
+#' @param colcomp Variable containing standard names.
+#' @param colsid Variable containing sample IDs.
+#' @param colrtref Variable containing reference standard retention times.
+#' @param colshift Variable containing measured retention time shifts.
+#' @param type Regression type for predicting retention times ("lm" or "poly").
+#' @return mzrt scatter plot visualizing differences between
+#' the expected and measured retention times of all reference
+#' standards.
+#' @examples
+#'
+#' # d1 <- tms_rtcor(ref = rtc, dat = mzlist)
+#'
+#' @import ggplot2
+#' @export
+tms_rtcor <- function(
+  dat,
+  ref,
+  colrt = "ref_RT",
+  colshift = "med_shift",
+  type = "lm"
+) {
+  # load data
+  ## reference standards
+  ld1 <- ref
+  ld1[["exp_RT"]] <- ld1[[colrt]] + ld1[["med_shift"]]
+  ## all compounds
+  ld2 <- dat
+  # Use reference standards for training regression model
+  if(type == "lm") {train <- lm(data = ld1, exp_RT ~ ref_RT)} # nolint
+  ## Predict retention times based on model
+  ld2[["exp_RT"]] <- ld2[[colrt]] * (train[[1]][[2]]) +
+    train[[1]][[1]]
+  ## Plot predictions
+  p1 <- ggplot2::ggplot(
+    data = ld1
+  ) +
+    ggplot2::geom_line(
+      ggplot2::aes(
+        x = .data[[colrt]], # nolint
+        y = .data[[colrt]]
+      ),
+      linetype = "dashed"
+    ) +
+    ggplot2::geom_line(
+      ggplot2::aes(
+        x = .data[[colrt]], # nolint
+        y = .data[["exp_RT"]]
+      )
+    ) +
+    ggplot2::geom_point(
+      data = ld2,
+      ggplot2::aes(
+        x = ld2[[colrt]],
+        y = ld2[[colrt]]
+      ),
+      shape = 16,
+      color = col_univ()[[1]],
+      size = 2
+    ) +
+    ggplot2::geom_point(
+      data = ld2,
+      ggplot2::aes(
+        x = ld2[[colrt]],
+        y = ld2[["exp_RT"]]
+      ),
+      shape = 16,
+      color = col_univ()[[2]],
+      size = 2
+    ) +
+    ms_theme() +
+    ggplot2::labs(
+      x = "Reference RT",
+      y = "Predicted RT"
+    )
+  # return data frame with expected retention times for each compound
+  out <- list("data" = ld2, "plot" = p1)
+  return(out)
+}
+
+#' Peak Detection (Targeted)
+#'
+#' Calculates local minima and maxima within a specified
+#' retention time window to determine peaks
+#'
+#' @param dat Input standard list.
+#' @param ref Input mzrt list containing reference precursor m/z and
+#' retention time columns.
+#' @param intype Input data type: either "Skyline," a list of 2 vectors
+#' containing values separated by commas (default) or "xy," which is
+#' a list of two variables containing vectors of x and y coordinates.
+#' @param xcol X column name.
+#' @param ycol Y column name.
+#' @param comp Compound name to plot.
+#' @param lab Column containing sample labels.
+#' @param complab Column containing compound names.
+#' @param rttol Retention time tolerance window (in minutes).
+#' @param snr_type Summary statistic to calculate signal-to-noise ratio
+#' (either "median" [default] or "mean").
+#' @param spn Number of points used for peak detection; must be an odd number.
+#' @param mcc Cores to use if not using Windows.
+#' @return mzrt scatter plot visualizing differences between
+#' the expected and measured retention times of all reference
+#' standards.
+#' @examples
+#'
+#' # d1 <- tms_peakdetect(
+#' #   dat = d1[["merged"]],
+#' #   ref = rtcor[["data"]],
+#' #   comp = "15-HETE"
+#' # )
+#'
+#' @import dplyr
+#' @import stringr
+#' @import ggpmisc
+#' @import parallel
+#' @export
+tms_peakdetect <- function(
+  dat,
+  ref,
+  intype = "Skyline",
+  xcol = "RT_all",
+  ycol = "Intensity",
+  mcc = 8,
+  comp,
+  rttol = 0.2,
+  spn = 7,
+  lab = "SampleID",
+  complab = "Name",
+  rtcol = "exp_RT",
+  snr_type = "median"
+) {
+  # Load data and set parameters
+  ld <- dat
+  mzrt <- ref
+  xc <- xcol
+  yc <- ycol
+  lb <- lab
+  cmp <- comp
+  # Detect peaks from Skyline datasets
+  if(intype == "Skyline") { # nolint
+    # Convert RT and intensities to X and Y coordinates
+    ## Filter data
+    ld1 <- ld[ld[["Name"]] == cmp, ]
+    ## Format
+    ld1 <- dplyr::bind_rows(lapply(
+      seq.int(1, nrow(ld1), 1),
+      function(x) {
+        ld2 <- data.frame(
+          "X" = as.numeric(
+            unlist(stringr::str_split(ld1[x, xc], ","))
+          ),
+          "Y" = as.numeric(
+            unlist(stringr::str_split(ld1[x, yc], ","))
+          ),
+          "SampleID" = ld1[x, lb],
+          "Name" = ld1[x, complab]
+        )
+        return(ld2) # nolint
+      }
+    ))
+    # Select metadata
+    ld2 <- dplyr::select(
+      ld,
+      -c(xc, yc)
+    )
+    # Merge meta with reference list
+    ld2 <- dplyr::select(dplyr::left_join(
+      ld2,
+      mzrt,
+      by = c("Name", "synthesis_pathway")
+    ), c("ref_mz", rtcol), everything()) # nolint
+    # Convert sample IDs to factor
+    ld1[["SampleID"]] <- factor(
+      ld1[["SampleID"]],
+      levels = unique(ld1[["SampleID"]])
+    )
+    ld2[["SampleID"]] <- factor(
+      ld2[["SampleID"]],
+      levels = unique(ld2[["SampleID"]])
+    )
+    ld2 <- ld2[ld2[["Name"]] == cmp, ]
+    # Detect peaks for all samples in data
+    s1 <- unique(ld1[["SampleID"]])
+    if(Sys.info()[["sysname"]] != "Windows") { # nolint
+      pks <- dplyr::bind_rows(
+        parallel::mclapply(
+          mc.cores = mcc,
+          seq.int(1, length(s1), 1),
+          function(i) {
+            tryCatch(
+              {
+                ## Select sample
+                ld3 <- ld1[ld1[["SampleID"]] == s1[[i]], ]
+                ## Select metadata
+                ld3c <- ld2[ld2[["SampleID"]] == s1[[i]], ]
+                # Peak detection
+                ## Local maximum within reference RT window
+                ### Subset
+                ld3_peak <- ld3
+                ld3_peak <- ld3_peak[
+                  ld3_peak[["X"]] > (unique(ld3c[["exp_RT"]]) - rttol) &
+                    ld3_peak[["X"]] < (unique(ld3c[["exp_RT"]]) + rttol),
+                ]
+                ### set global threshold to find peaks > 3x signal-to-noise
+                if(snr_type == "median") {ld3_threshold <- median(ld3_peak[["Y"]]) * 3} # nolint
+                if(snr_type == "mean") {ld3_threshold <- mean(ld3_peak[["Y"]]) * 3} # nolint
+                ld3_threshold <- ld3_threshold / max(ld3_peak[["Y"]])
+                if(ld3_threshold < -1 || ld3_threshold > 1) { # nolint
+                  ld3_max <- ld3_peak[
+                    ggpmisc::find_peaks(
+                      ld3_peak[["Y"]],
+                      span = spn
+                    ),
+                  ]
+                }
+                if(ld3_threshold > -1 && ld3_threshold < 1) { # nolint
+                  ld3_max <- ld3_peak[
+                    ggpmisc::find_peaks(
+                      ld3_peak[["Y"]],
+                      span = spn,
+                      global.threshold = ld3_threshold
+                    ),
+                  ]
+                }
+                if(nrow(ld3_max) == 1) { # nolint
+                  ld3_max <- dplyr::mutate(
+                    ld3_max,
+                    "Xdiff" = abs(ld3_max[["X"]] - unique(ld3c[["exp_RT"]]))
+                  )
+                }
+                if(nrow(ld3_max) > 1) { # nolint
+                  ld3_max <- dplyr::mutate(
+                    ld3_max,
+                    "Xdiff" = abs(ld3_max[["X"]] - unique(ld3c[["exp_RT"]]))
+                  )
+                  # Select maximum peak that is closest to reference
+                  ld3_max <- ld3_max[
+                    ld3_max[["Xdiff"]] == min(ld3_max[["Xdiff"]]),
+                  ]
+                }
+                ## Local minima relative to detected peak
+                ### Subset
+                ld3_peak <- ld3
+                ld3_min_1 <- ld3_peak[
+                  ld3_peak[["X"]] < ld3_max[["X"]] &
+                    ld3_peak[["X"]] > ld3_max[["X"]] - rttol,
+                ]
+                ld3_min_2 <- ld3_peak[
+                  ld3_peak[["X"]] > ld3_max[["X"]] &
+                    ld3_peak[["X"]] < ld3_max[["X"]] + rttol,
+                ]
+                ### trailing edge
+                min1 <- ggpmisc::find_valleys(ld3_min_1[["Y"]], span = spn)
+                if(length(min1[min1 == TRUE]) == 0) { # nolint
+                  ld3_min_1 <- ld3_min_1[
+                    ld3_min_1[["Y"]] == min(ld3_min_1[["Y"]]),
+                  ]
+                }
+                if(length(min1[min1 == TRUE]) > 0) { # nolint
+                  ld3_min_1 <- ld3_min_1[min1, ]
+                }
+                #### leading edge
+                min2 <- ggpmisc::find_valleys(ld3_min_2[["Y"]], span = spn)
+                if(length(min2[min2 == TRUE]) == 0) { # nolint
+                  ld3_min_2 <- ld3_min_2[
+                    ld3_min_2[["Y"]] == min(ld3_min_2[["Y"]]),
+                  ]
+                }
+                if(length(min2[min2 == TRUE]) > 0) { # nolint
+                  ld3_min_2 <- ld3_min_2[min2, ]
+                }
+                #### filter if more than one value present
+                if(nrow(ld3_min_1) == 1) { # nolint
+                  ld3_min_1 <- dplyr::mutate(
+                    ld3_min_1,
+                    "Xdiff" = abs(ld3_min_1[["X"]] - ld3_max[["X"]])
+                  )
+                  ld3_min_1 <- ld3_min_1[ld3_min_1[["X"]] < ld3_max[["X"]], ]
+                }
+                if(nrow(ld3_min_1) > 1) { # nolint
+                  ld3_min_1 <- dplyr::mutate(
+                    ld3_min_1,
+                    "Xdiff" = abs(ld3_min_1[["X"]] - ld3_max[["X"]])
+                  )
+                  ld3_min_1 <- ld3_min_1[ld3_min_1[["X"]] < ld3_max[["X"]], ]
+                  ld3_min_1 <- ld3_min_1[
+                    ld3_min_1[["Xdiff"]] == min(ld3_min_1[["Xdiff"]]),
+                  ]
+                }
+                if(nrow(ld3_min_2) == 1) { # nolint
+                  ld3_min_2 <- dplyr::mutate(
+                    ld3_min_2,
+                    "Xdiff" = abs(ld3_min_2[["X"]] - ld3_max[["X"]])
+                  )
+                  ld3_min_2 <- ld3_min_2[ld3_min_2[["X"]] > ld3_max[["X"]], ]
+                }
+                if(nrow(ld3_min_2) > 1) { # nolint
+                  ld3_min_2 <- dplyr::mutate(
+                    ld3_min_2,
+                    "Xdiff" = abs(ld3_min_2[["X"]] - ld3_max[["X"]])
+                  )
+                  ld3_min_2 <- ld3_min_2[ld3_min_2[["X"]] > ld3_max[["X"]], ]
+                  ld3_min_2 <- ld3_min_2[
+                    ld3_min_2[["Xdiff"]] == min(ld3_min_2[["Xdiff"]]),
+                  ]
+                }
+                ## Define peak boundaries
+                ld3_peak <- dplyr::bind_rows(
+                  ld3_min_1,
+                  ld3_max,
+                  ld3_min_2
+                )
+                ## Recombine detected peak with metadata
+                ld3_peak <- data.frame(
+                  "pkRT" = ld3_peak[["X"]][[2]],
+                  "pkHeight" = ld3_peak[["Y"]][[2]],
+                  "pkBoundary" = paste(ld3_peak[["X"]], collapse = ","),
+                  "SampleID" = ld3_peak[["SampleID"]][[2]],
+                  "Name" = ld3_peak[["Name"]][[2]],
+                  "pkRTdiff" = ld3_peak[["Xdiff"]][[2]]
+                )
+                pks2 <- dplyr::select(dplyr::left_join(
+                  ld3c, # nolint
+                  ld3_peak,
+                  by = c("Name", "SampleID")
+                ), c("Name", "SampleID", everything())) # nolint
+              },
+              error = function(e) {
+                print(paste("No peaks detected in", s1[[i]]))
+              }
+            )
+            if(!exists("pks2")) { # nolint
+              pks2 <- data.frame(
+                ld2[ld2[["SampleID"]] == s1[[i]], ],
+                "pkRT" = NA,
+                "pkHeight" = NA,
+                "pkBoundary" = NA,
+                "pkRTdiff" = NA
+              )
+              colnames(pks2) <- c(
+                names(ld2),
+                "pkRT", "pkHeight", "pkBoundary", "pkRTdiff"
+              )
+            }
+            return(pks2) # nolint
+          }
+        )
+      )
+    }
+  }
+  return(pks) # nolint
 }
