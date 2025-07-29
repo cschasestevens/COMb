@@ -170,7 +170,7 @@ msT_format <- function( # nolint
         ld1[["data"]][["merged"]],
         ld1[["sample_list"]][
           ,
-          c("Sample", "Code", "Replicate","Type", "Group")
+          c("Sample", "Code", "Replicate", "Type", "Group")
         ],
         by = "Sample"
       ),
