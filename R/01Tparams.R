@@ -12,7 +12,7 @@
 #' # )
 #'
 #' @export
-msT_input <- function( # nolint
+tms_input <- function( # nolint
   dir1 = NULL
 ) {
   # Load data
@@ -79,7 +79,7 @@ msT_input <- function( # nolint
 #'
 #' @import dplyr
 #' @export
-msT_format <- function( # nolint
+tms_format <- function( # nolint
   dat,
   intype = "Skyline"
 ) {

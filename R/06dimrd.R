@@ -3,13 +3,17 @@
 #' Performs dimension reduction for a selected dataset using one
 #' of the following methods: PCA, UMAP, PLSDA.
 #'
-#' @param mat1 Pareto-scaled data matrix returned by ms_data_check().
+#' @param mat1 Pareto-scaled data matrix returned by ms_data_check() or
+#' a data matrix containing samples as rows and compounds as variables.
 #' @param md Data frame containing sample information.
 #' @param md_var Vector of either a single variable or multiple variables
 #' to plot. For single dimension reduction plots, only a single variable
 #' should be listed.
+#' @param sid Sample ID column used for merging input and metadata.
 #' @param dim_type Dimension reduction technique to use for plotting.
 #' Currently available options are "PCA", "UMAP", or "PLSDA".
+#' @param data_scale If data have not been scaled, perform log2-transform
+#' and pareto scaling.
 #' @param ret_umap Only used if dim_type = "UMAP"; Use Python umap-learn
 #' for calculating UMAP (TRUE or FALSE).
 #' @param dim1 Number of dimensions to plot data (Either "2D" or "3D").
@@ -36,19 +40,84 @@ ms_dim_rd <- function( # nolint
   mat1,
   md,
   md_var,
-  dim_type,
+  sid = "SampleID",
+  dim_type = "PCA",
+  data_scale = TRUE,
   ret_umap = FALSE,
-  dim1,
-  p_type,
-  p_lab = TRUE
+  dim1 = "2D",
+  p_type = "single",
+  p_lab = FALSE
 ) {
   d1 <- mat1
   md1 <- md
+  if(data_scale == FALSE) { # nolint
+    dimr <- list(
+      "input" = mat1,
+      "meta" = md
+    )
+  }
+  if(data_scale == TRUE) { # nolint
+    # Imputed data sets for dimension reduction
+    ## Input data
+    dimr <- list(
+      "input" = d1,
+      "meta" = md1
+    )
+    dimr[["imputed"]] <- dimr[["input"]]
+    ### replace NA with 0
+    dimr[["imputed"]][is.na(dimr[["imputed"]])] <- 0
+    ### remove missing compounds
+    dimr[["imputed"]] <- dimr[["imputed"]][rowSums(dimr[["imputed"]]) > 0, ]
+    ### replace zeroes with 1/10th of the lowest non-zero
+    ### value per compound
+    dimr[["imputed"]] <- setNames(as.data.frame(
+      lapply(
+        seq.int(1, nrow(dimr[["imputed"]]), 1),
+        function(x) {
+          d1 <- t(dimr[["imputed"]][x, ])
+          d1 <- ifelse(
+            d1 == 0,
+            round(0.1 * min(d1[d1 > 0]), digits = 2),
+            d1
+          )
+          return(d1) # nolint
+        }
+      )
+    ), row.names(dimr[["imputed"]]))
+    ## Log2-transformation
+    dimr[["data.log2"]] <- magrittr::set_rownames(setNames(
+      as.data.frame(
+        lapply(
+          seq.int(1, ncol(dimr[["imputed"]]), 1),
+          function(x) {
+            log2(dimr[["imputed"]][[x]])
+          }
+        )
+      ),
+      c(names(dimr[["imputed"]]))
+    ), row.names(dimr[["imputed"]]))
+    ## Pareto scaling
+    dimr[["input"]] <- setNames(
+      as.data.frame(
+        apply(
+          apply(
+            as.matrix(dimr[["data.log2"]]),
+            2,
+            function(x) x - mean(x)
+          ),
+          2,
+          function(y) round(y / sqrt(sd(y)), digits = 2)
+        )
+      ),
+      c(names(dimr[["data.log2"]]))
+    )
+    dimr[["input"]] <- as.data.frame(t(dimr[["input"]]))
+  }
   if(dim_type == "PCA") { # nolint
-    p1 <- prcomp(d1)
+    p1 <- prcomp(dimr[["input"]])
     vrc <- summary(p1)$importance[2, ]
     p2 <- setNames(
-      p1[["x"]][, 1:3],
+      as.data.frame(p1[["x"]][, 1:3]),
       c(
         unlist(
           lapply(
@@ -63,9 +132,12 @@ ms_dim_rd <- function( # nolint
         )
       )
     )
-    p2 <- cbind(
+    md2 <- md1[md1[[sid]] %in% rownames(p2), ]
+    p2[[sid]] <- rownames(p2)
+    p2 <- dplyr::left_join(
       p2,
-      md1
+      md2,
+      by = sid
     )
     # Plot
     if(p_type == "single") { # nolint
@@ -74,8 +146,8 @@ ms_dim_rd <- function( # nolint
           p3 <- ggplot2::ggplot(
             p2,
             ggplot2::aes(
-              x = .data[["PC1"]], # nolint
-              y = .data[["PC2"]], # nolint
+              x = .data[[names(p2)[[1]]]], # nolint
+              y = .data[[names(p2)[[2]]]], # nolint
               color = .data[[md_var]], # nolint
               label = .data[[md_var]] # nolint
             )
@@ -92,9 +164,7 @@ ms_dim_rd <- function( # nolint
                   list(p2[[md_var]]),
                   FUN = median
                 ),
-                c(md_var, names(
-                  p2[, 1:2]
-                )
+                c(md_var, names(p2)[1:2]
                 )
               ),
               size = 4,
@@ -104,7 +174,7 @@ ms_dim_rd <- function( # nolint
               paste(""),
               values = col_univ() # nolint
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               panel.grid.major.y = ggplot2::element_blank(),
               axis.text.x = ggplot2::element_blank(),
@@ -122,8 +192,8 @@ ms_dim_rd <- function( # nolint
           p3 <- ggplot2::ggplot(
             p2,
             ggplot2::aes(
-              x = .data[["PC1"]], # nolint
-              y = .data[["PC2"]], # nolint
+              x = .data[[names(p2)[[1]]]], # nolint
+              y = .data[[names(p2)[[2]]]], # nolint
               color = .data[[md_var]], # nolint
               label = .data[[md_var]] # nolint
             )
@@ -134,14 +204,14 @@ ms_dim_rd <- function( # nolint
               alpha = 0.6
             ) +
             ggplot2::labs(
-              y = names(p2[2]),
-              x = names(p2[1])
+              y = names(p2)[[2]],
+              x = names(p2)[[1]]
             ) +
             ggplot2::scale_color_manual(
               paste(""),
               values = col_univ() # nolint
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               plot.margin = ggplot2::unit(
                 c(0.1, 0.1, 0.1, 0.1), "cm"
@@ -152,9 +222,9 @@ ms_dim_rd <- function( # nolint
       if(dim1 == "3D") { # nolint
         p3 <- plotly::plot_ly(
           p2,
-          x = ~.data[["PC1"]], # nolint
-          y = ~.data[["PC2"]], # nolint
-          z = ~.data[["PC3"]], # nolint
+          x = ~.data[[names(p2)[[1]]]], # nolint
+          y = ~.data[[names(p2)[[2]]]], # nolint
+          z = ~.data[[names(p2)[[3]]]], # nolint
           color = ~as.factor(.data[[md_var]]), # nolint
           colors = col_univ() # nolint
         ) %>% # nolint
@@ -183,8 +253,8 @@ ms_dim_rd <- function( # nolint
           c(md_var), # nolint
           function(x) {
             p2[, c(
-              "PC1",
-              "PC2",
+              1,
+              2,
               x
             )
             ]
@@ -198,15 +268,15 @@ ms_dim_rd <- function( # nolint
           p <-  ggplot2::ggplot(
             d2_list[[x]],
             ggplot2::aes(
-              x = .data[["PC1"]], # nolint
-              y = .data[["PC2"]], # nolint
+              x = .data[[names(d2_list[[x]])[[1]]]], # nolint
+              y = .data[[names(d2_list[[x]])[[2]]]], # nolint
               color = as.factor(.data[[x]]), # nolint
               label = as.factor(.data[[x]]) # nolint
             )
           ) +
             ggplot2::labs(
-              y = names(p2[2]),
-              x = names(p2[1])
+              y = names(p2)[[2]],
+              x = names(p2)[[1]]
             ) +
             ggplot2::scale_color_manual(
               paste(""),
@@ -218,7 +288,7 @@ ms_dim_rd <- function( # nolint
               size = 2,
               alpha = 0.6
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               panel.grid.major.y = ggplot2::element_blank(),
               axis.text.x = ggplot2::element_blank(),
@@ -235,7 +305,7 @@ ms_dim_rd <- function( # nolint
                 0.85
               )
             )
-          return(p)
+          return(p) # nolint
         }
       )
       # Combine output
@@ -273,7 +343,7 @@ ms_dim_rd <- function( # nolint
   if(dim_type == "UMAP") { # nolint
     if(ret_umap == TRUE) { # nolint
       p1 <- umap::umap(
-        d1,
+        dimr[["input"]],
         method = "umap-learn",
         n_epochs = 500,
         n_components = 3,
@@ -283,7 +353,7 @@ ms_dim_rd <- function( # nolint
     }
     if(ret_umap == FALSE) { # nolint
       p1 <- umap::umap(
-        d1,
+        dimr[["input"]],
         n_epochs = 500,
         n_components = 3,
         verbose = TRUE,
@@ -294,9 +364,12 @@ ms_dim_rd <- function( # nolint
       as.data.frame(p1[["layout"]]),
       c("UMAP.1", "UMAP.2", "UMAP.3")
     )
-    p2 <- cbind(
+    md2 <- md1[md1[[sid]] %in% rownames(p2), ]
+    p2[[sid]] <- rownames(p2)
+    p2 <- dplyr::left_join(
       p2,
-      md1
+      md2,
+      by = sid
     )
     if(p_type == "single") { # nolint
       if(dim1 == "2D") { # nolint
@@ -322,9 +395,7 @@ ms_dim_rd <- function( # nolint
                   list(p2[[md_var]]),
                   FUN = median
                 ),
-                c(md_var, names(
-                  p2[, c("UMAP.1", "UMAP.2")]
-                )
+                c(md_var, names(p2)[1:2]
                 )
               ),
               size = 4,
@@ -334,7 +405,7 @@ ms_dim_rd <- function( # nolint
               paste(""),
               values = col_univ() # nolint
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               panel.grid.major.y = ggplot2::element_blank(),
               axis.text.x = ggplot2::element_blank(),
@@ -367,7 +438,7 @@ ms_dim_rd <- function( # nolint
               paste(""),
               values = col_univ() # nolint
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               plot.margin = ggplot2::unit(
                 c(0.1, 0.1, 0.1, 0.1), "cm"
@@ -440,7 +511,7 @@ ms_dim_rd <- function( # nolint
               size = 2,
               alpha = 0.6
             ) +
-            ms_theme1() + # nolint
+            ms_theme() + # nolint
             ggplot2::theme(
               panel.grid.major.y = ggplot2::element_blank(),
               axis.text.x = ggplot2::element_blank(),
@@ -457,7 +528,7 @@ ms_dim_rd <- function( # nolint
                 0.85
               )
             )
-          return(p)
+          return(p) # nolint
         }
       )
       # Combine output

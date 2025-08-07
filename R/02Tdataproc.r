@@ -158,6 +158,8 @@ tms_chromatogram <- function( # nolint
 #' @param phcol Peak height column.
 #' @param snr_type Summary statistic for calculating signal to noise
 #' ratio (either "median" or "mean").
+#' @param snr Signal to noise ratio for filtering peaks.
+#' Use 3 for LOD and 10 for LOQ.
 #' @return Integrated raw and normalized peak areas and heights.
 #' @examples
 #'
@@ -181,7 +183,8 @@ tms_integrate <- function( # nolint
   ycol = "Intensity",
   pkcol = "pkBoundary",
   phcol = "pkHeight",
-  snr_type = "median"
+  snr_type = "median",
+  snr = 3
 ) {
   # Load data
   ld <- dat
@@ -206,8 +209,8 @@ tms_integrate <- function( # nolint
         )[[3]],
     ]
     # Determine signal/noise threshold
-    if(snr_type == "median") {ld3_thresh <- median(ld3[["Y"]]) * 3} # nolint
-    if(snr_type == "mean") {ld3_thresh <- mean(ld3[["Y"]]) * 3} # nolint
+    if(snr_type == "median") {ld3_thresh <- median(ld3[["Y"]]) * snr} # nolint
+    if(snr_type == "mean") {ld3_thresh <- mean(ld3[["Y"]]) * snr} # nolint
     # Calculate raw and background-subtracted AUC and PH
     # Calculate AUC for detected peak
     if(ld3_thresh > max(ld4[["Y"]])) { # nolint
@@ -796,6 +799,8 @@ tms_rtcor <- function(
 #' @param rttol Retention time tolerance window (in minutes).
 #' @param snr_type Summary statistic to calculate signal-to-noise ratio
 #' (either "median" [default] or "mean").
+#' @param snr Signal to noise ratio for filtering peaks.
+#' Use 3 for LOD and 10 for LOQ.
 #' @param spn Number of points used for peak detection; must be an odd number.
 #' @param mcc Cores to use if not using Windows.
 #' @return mzrt scatter plot visualizing differences between
@@ -827,7 +832,8 @@ tms_peakdetect <- function(
   lab = "SampleID",
   complab = "Name",
   rtcol = "exp_RT",
-  snr_type = "median"
+  snr_type = "median",
+  snr = 3
 ) {
   # Load data and set parameters
   ld <- dat
@@ -901,9 +907,10 @@ tms_peakdetect <- function(
                   ld3_peak[["X"]] > (unique(ld3c[["exp_RT"]]) - rttol) &
                     ld3_peak[["X"]] < (unique(ld3c[["exp_RT"]]) + rttol),
                 ]
-                ### set global threshold to find peaks > 3x signal-to-noise
-                if(snr_type == "median") {ld3_threshold <- median(ld3_peak[["Y"]]) * 3} # nolint
-                if(snr_type == "mean") {ld3_threshold <- mean(ld3_peak[["Y"]]) * 3} # nolint
+                ### set global threshold to find peaks > signal-to-noise ratio
+                ### use snr = 3 for LOD and snr = 10 for LOQ
+                if(snr_type == "median") {ld3_threshold <- median(ld3_peak[["Y"]]) * snr} # nolint
+                if(snr_type == "mean") {ld3_threshold <- mean(ld3_peak[["Y"]]) * snr} # nolint
                 ld3_threshold <- ld3_threshold / max(ld3_peak[["Y"]])
                 if(ld3_threshold < -1 || ld3_threshold > 1) { # nolint
                   ld3_max <- ld3_peak[

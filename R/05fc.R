@@ -59,7 +59,7 @@ ms_stat_fc <- function( # nolint
     d1 <- mat1
     md1 <- md
     if(is.null(an)) { # nolint
-      an1 <- data.frame("Name" = names(mat1))
+      an1 <- data.frame("Name" = names(d1))
     }
     if(!is.null(an)) { # nolint
       an1 <- an
@@ -78,7 +78,7 @@ ms_stat_fc <- function( # nolint
             )
           )
         ))
-        return(cb1)
+        return(cb1) # nolint
       }
     ))
     if(nrow(var_comb) == 1) { # nolint
@@ -98,7 +98,6 @@ ms_stat_fc <- function( # nolint
           function(z) paste(z, collapse = ":")
         )
       )
-      cb2
       # Determine combinations
       fold_comb <- as.data.frame(
         t(
@@ -110,7 +109,6 @@ ms_stat_fc <- function( # nolint
           )
         )
       )
-      fold_comb
     }
     if(nrow(var_comb) > 1) { # nolint
       fold_comb <- dplyr::bind_rows(
@@ -147,7 +145,7 @@ ms_stat_fc <- function( # nolint
                 )
               )
             )
-            return(cb2)
+            return(cb2) # nolint
           }
         )
       )
@@ -177,7 +175,7 @@ ms_stat_fc <- function( # nolint
               ),
               c("Group", names(cm2[, (length(cm1) + 1):ncol(cm2)]))
             )
-            return(cm2)
+            return(cm2) # nolint
           }
         ),
         var_comb[[1]]
@@ -206,7 +204,7 @@ ms_stat_fc <- function( # nolint
               if(mat_type == "scaled") { # nolint
                 fc1 <- fc1
               }
-              return(fc1)
+              return(fc1) # nolint
             }
           )
         ), "Name" = an1[["Name"]]), id.vars = "Name"
@@ -215,7 +213,6 @@ ms_stat_fc <- function( # nolint
     )
     fold_all[["Comparison.fc"]] <- as.character(fold_all[["Comparison.fc"]])
   }
-
   if(fc_class == TRUE && lipid_fc == FALSE) { # nolint
     d1 <- mat1
     an1 <- an
@@ -240,10 +237,9 @@ ms_stat_fc <- function( # nolint
             )
           )
         ))
-        return(cb1)
+        return(cb1) # nolint
       }
     ))
-
     if(nrow(var_comb) == 1) { # nolint
       cb1 <- paste(unlist(strsplit(var_comb[1, 1], ":")), sep = ", ")
       # Change variable to factor
@@ -261,7 +257,6 @@ ms_stat_fc <- function( # nolint
           function(z) paste(z, collapse = ":")
         )
       )
-      cb2
       # Determine combinations
       fold_comb <- as.data.frame(
         t(
@@ -273,7 +268,6 @@ ms_stat_fc <- function( # nolint
           )
         )
       )
-      fold_comb
     }
     if(nrow(var_comb) > 1) { # nolint
       fold_comb <- dplyr::bind_rows(
@@ -310,7 +304,7 @@ ms_stat_fc <- function( # nolint
                 )
               )
             )
-            return(cb2)
+            return(cb2) # nolint
           }
         )
       )
@@ -340,13 +334,12 @@ ms_stat_fc <- function( # nolint
               ),
               c("Group", names(cm2[, (length(cm1) + 1):ncol(cm2)]))
             )
-            return(cm2)
+            return(cm2) # nolint
           }
         ),
         var_comb[[1]]
       )
     )
-
     # Group Fold Changes
     fold_all <- setNames(
       reshape2::melt(
@@ -370,7 +363,7 @@ ms_stat_fc <- function( # nolint
               if(mat_type == "scaled") { # nolint
                 fc1 <- fc1
               }
-              return(fc1)
+              return(fc1) # nolint
             }
           )
         ), "Name" = names(d1)), id.vars = "Name"
@@ -436,7 +429,7 @@ ms_stat_fc <- function( # nolint
               )
             )
           ))
-          return(cb1)
+          return(cb1) # nolint
         }
       ))
       if(nrow(var_comb) == 1) { # nolint
@@ -504,7 +497,7 @@ ms_stat_fc <- function( # nolint
                   )
                 )
               )
-              return(cb2)
+              return(cb2) # nolint
             }
           )
         )
@@ -534,7 +527,7 @@ ms_stat_fc <- function( # nolint
                 ),
                 c("Group", names(cm2[, (length(cm1) + 1):ncol(cm2)]))
               )
-              return(cm2)
+              return(cm2) # nolint
             }
           ),
           var_comb[[1]]
@@ -567,7 +560,7 @@ ms_stat_fc <- function( # nolint
                 if(mat_type == "scaled") { # nolint
                   fc1 <- fc1
                 }
-                return(fc1)
+                return(fc1) # nolint
               }
             )
           ), "Name" = names(d1)), id.vars = "Name"

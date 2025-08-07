@@ -117,7 +117,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -127,7 +127,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -167,7 +167,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -177,7 +177,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -216,7 +216,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -226,7 +226,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -270,7 +270,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -364,7 +364,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -374,7 +374,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -414,7 +414,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -424,7 +424,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -463,7 +463,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -473,7 +473,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -521,7 +521,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -641,7 +641,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -651,7 +651,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -691,7 +691,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -701,7 +701,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -740,7 +740,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -750,7 +750,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -798,7 +798,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -887,7 +887,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -897,7 +897,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -936,7 +936,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -946,7 +946,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -984,7 +984,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -994,7 +994,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1038,7 +1038,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -1131,7 +1131,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1141,7 +1141,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1180,7 +1180,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1190,7 +1190,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1228,7 +1228,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1238,7 +1238,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1286,7 +1286,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -1405,7 +1405,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1415,7 +1415,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1454,7 +1454,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1464,7 +1464,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1502,7 +1502,7 @@ ms_stat_anova <- function( # nolint
                     print("ANOVA failed for selected comparison...")
                     d2 <- data.frame("p adj" = NA)
                     names(d2) <- c("p adj")
-                    return(d2)
+                    return(d2) # nolint
                   }
                 )
                 d2 <- dplyr::mutate(
@@ -1512,7 +1512,7 @@ ms_stat_anova <- function( # nolint
                 )
                 d2 <- d2[, c("Name", "Comparison", "p adj")]
                 d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
-                return(d2)
+                return(d2) # nolint
               }
             ),
             an1[["Name"]]
@@ -1560,7 +1560,7 @@ ms_stat_anova <- function( # nolint
                 ),
                 fx1
               )
-              return(fx2)
+              return(fx2) # nolint
             }
           )
         )
@@ -1576,5 +1576,338 @@ ms_stat_anova <- function( # nolint
       )
     }
   }
+  return(d_out)
+}
+
+#' T-test/Wilcox Rank Sum Test
+#'
+#' Conducts either Student's T-test or Wilcox Rank Sum Test
+#' for selected variable, depending on data distribution,
+#' and combines with fold changes for the selected comparison.
+#'
+#' @param matpv Data matrix for conducting ANOVA.
+#' @param matfc Data matrix for calculating fold change.
+#' @param matfc_type Input data type for calculating fold change;
+#' either "norm" or "scaled."
+#' @param md Metadata from ms_input().
+#' @param md_var Metadata variables to test by ANOVA.
+#' @param an Reference annotation data frame.
+#' @param grp1 Treatment group "A" name for test input.
+#' @param grp2 Treatment group "B" name.
+#' @param sid Sample ID column for filtering input data matrix.
+#' @return A data frame containing the combined stats and fold change results
+#' for the specified variable.
+#' @examples
+#'
+#' # ms_stat_univ(
+#' #   matpv = lstat[["data"]],
+#' #   matfc = lstat[["data"]],
+#' #   md = lstat[["meta"]],
+#' #   grp1 = "Group1",
+#' #   grp2 = "Group2"
+#' # )
+#'
+#' @export
+ms_stat_univ <- function( # nolint
+  matpv,
+  matfc,
+  matfc_type = "norm",
+  md,
+  md_var = "Group",
+  an = NULL,
+  grp1,
+  grp2,
+  sid = "SampleID"
+) { # nolint
+  # Load data
+  d1 <- matpv
+  md1 <- md
+  if(is.null(an)) { # nolint
+    an1 <- data.frame("Name" = names(d1))
+  }
+  if(!is.null(an)) { # nolint
+    an1 <- an
+  }
+  # Check for normality
+  d1_check <- as.data.frame(
+    apply(
+      as.matrix(d1),
+      2,
+      function(x) {
+        tryCatch(
+          {
+            mvnormtest::mshapiro.test(t(as.matrix(x)))[[2]]
+          },
+          error = function(e) {
+            print(
+              "Normality test unsuccessful; NAs likely present in input data" # nolint
+            )
+          }
+        )
+      }
+    )
+  )
+  print(
+    paste(
+      length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ]),
+      "of",
+      nrow(d1_check),
+      "compounds have normally distributed intensities."
+    )
+  )
+  if( # nolint
+    (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
+      nrow(d1_check) < 0.9
+  ) {
+    if(Sys.info()[["sysname"]] != "Windows") { # nolint
+      # Wilcox Rank Sum
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          parallel::mclapply(
+            mc.cores = ceiling(parallel::detectCores() * 0.75),
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- tryCatch(
+                {
+                  g1 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp1, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  g2 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp2, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  d2 <- setNames(
+                    as.data.frame(
+                      wilcox.test(g1, g2)[["p.value"]]
+                    ),
+                    "p.value"
+                  )
+                },
+                error = function(e) {
+                  print("Wilcox Test failed for selected comparison...")
+                  d2 <- data.frame("p.value" = NA)
+                  names(d2) <- c("p.value")
+                  return(d2) # nolint
+                }
+              )
+              d2 <- dplyr::mutate(
+                d2,
+                "Name" = an1[["Name"]][[y]],
+                "Comparison" = paste(grp1, grp2, sep = "-")
+              )
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+              return(d2) # nolint
+            }
+          ),
+          an1[["Name"]]
+        )
+      )
+      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    }
+    if(Sys.info()[["sysname"]] == "Windows") { # nolint
+      # Wilcox Rank Sum
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- tryCatch(
+                {
+                  g1 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp1, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  g2 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp2, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  d2 <- setNames(
+                    as.data.frame(
+                      wilcox.test(g1, g2)[["p.value"]]
+                    ),
+                    "p.value"
+                  )
+                },
+                error = function(e) {
+                  print("Wilcox Test failed for selected comparison...")
+                  d2 <- data.frame("p.value" = NA)
+                  names(d2) <- c("p.value")
+                  return(d2) # nolint
+                }
+              )
+              d2 <- dplyr::mutate(
+                d2,
+                "Name" = an1[["Name"]][[y]],
+                "Comparison" = paste(grp1, grp2, sep = "-")
+              )
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+              return(d2) # nolint
+            }
+          ),
+          an1[["Name"]]
+        )
+      )
+      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    }
+  }
+  if( # nolint
+    (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
+      nrow(d1_check) > 0.9
+  ) {
+    if(Sys.info()[["sysname"]] != "Windows") { # nolint
+      # T-test
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          parallel::mclapply(
+            mc.cores = ceiling(parallel::detectCores() * 0.75),
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- tryCatch(
+                {
+                  g1 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp1, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  g2 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp2, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  d2 <- setNames(
+                    as.data.frame(
+                      t.test(g1, g2)[["p.value"]]
+                    ),
+                    "p.value"
+                  )
+                },
+                error = function(e) {
+                  print("Welsh's T-Test failed for selected comparison...")
+                  d2 <- data.frame("p.value" = NA)
+                  names(d2) <- c("p.value")
+                  return(d2) # nolint
+                }
+              )
+              d2 <- dplyr::mutate(
+                d2,
+                "Name" = an1[["Name"]][[y]],
+                "Comparison" = paste(grp1, grp2, sep = "-")
+              )
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+              return(d2) # nolint
+            }
+          ),
+          an1[["Name"]]
+        )
+      )
+      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    }
+    if(Sys.info()[["sysname"]] == "Windows") { # nolint
+      # T-test
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- tryCatch(
+                {
+                  g1 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp1, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  g2 <- d1[
+                    rownames(d1) %in%
+                      md1[md1[["Group"]] == grp2, sid],
+                    an1[["Name"]][[y]]
+                  ]
+                  d2 <- setNames(
+                    as.data.frame(
+                      t.test(g1, g2)[["p.value"]]
+                    ),
+                    "p.value"
+                  )
+                },
+                error = function(e) {
+                  print("Welsh's T-Test failed for selected comparison...")
+                  d2 <- data.frame("p.value" = NA)
+                  names(d2) <- c("p.value")
+                  return(d2) # nolint
+                }
+              )
+              d2 <- dplyr::mutate(
+                d2,
+                "Name" = an1[["Name"]][[y]],
+                "Comparison" = paste(grp1, grp2, sep = "-")
+              )
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+              return(d2) # nolint
+            }
+          ),
+          an1[["Name"]]
+        )
+      )
+      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    }
+  }
+  # Add fold change
+  if(matfc_type == "norm") { # nolint
+    fold_all <- ms_stat_fc( # nolint
+      mat1 = matfc,
+      mat_type = "norm",
+      md = md1,
+      md_var = md_var,
+      an = an1
+    )
+  }
+  if(matfc_type == "scaled") { # nolint
+    fold_all <- ms_stat_fc( # nolint
+      mat1 = matfc,
+      mat_type = "scaled",
+      md = md1,
+      md_var = md_var,
+      an = an1
+    )
+  }
+  # Fix comparisons to match fold change comparisons
+  dm_fix <- data.frame(
+    "Comparison" = unique(d_mult[["Comparison"]]),
+    "Comparison.fc" = unlist(
+      lapply(
+        seq.int(1, length(unique(d_mult[["Comparison"]])), 1),
+        function(x) {
+          fx1 <- unique(d_mult[["Comparison"]])[[x]]
+          fx2 <- ifelse(
+            fx1 %in% unique(fold_all[["Comparison.fc"]]) == FALSE,
+            paste(
+              unlist(strsplit(fx1, "-"))[[2]],
+              unlist(strsplit(fx1, "-"))[[1]],
+              sep = "-"
+            ),
+            fx1
+          )
+          return(fx2) # nolint
+        }
+      )
+    )
+  )
+  d_out <- dplyr::left_join(
+    dplyr::left_join(
+      d_mult,
+      dm_fix,
+      by = "Comparison"
+    ),
+    fold_all,
+    by = c("Comparison.fc", "Name")
+  )
   return(d_out)
 }
