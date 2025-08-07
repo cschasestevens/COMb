@@ -60,6 +60,8 @@ col_grad <- function(
 #'
 #' General plotting theme.
 #'
+#' @param leg Plot legend coordinates.
+#'
 #' @return ggplot2 theme parameters to replace default plot theme.
 #' @import ggplot2
 #' @examples

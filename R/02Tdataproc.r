@@ -701,9 +701,7 @@ tms_mzrt <- function( # nolint
 #'
 #' @param dat Input standard list.
 #' @param ref Reference list containing retention times.
-#' @param colcomp Variable containing standard names.
-#' @param colsid Variable containing sample IDs.
-#' @param colrtref Variable containing reference standard retention times.
+#' @param colrt Retention time column.
 #' @param colshift Variable containing measured retention time shifts.
 #' @param type Regression type for predicting retention times ("lm" or "poly").
 #' @return mzrt scatter plot visualizing differences between
@@ -797,6 +795,7 @@ tms_rtcor <- function(
 #' @param lab Column containing sample labels.
 #' @param complab Column containing compound names.
 #' @param rttol Retention time tolerance window (in minutes).
+#' @param rtcol Retention time column.
 #' @param snr_type Summary statistic to calculate signal-to-noise ratio
 #' (either "median" [default] or "mean").
 #' @param snr Signal to noise ratio for filtering peaks.

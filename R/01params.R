@@ -207,13 +207,6 @@ ms_input <- function( # nolint
 #'
 #' @param f Name of a data file in the "data/" folder.
 #' Accepts .xlsx, .csv, and .txt files.
-#' @param md_num Number of metadata columns in input data file.
-#' @param qc_rep Should a QC report be generated for the selected dataset?
-#' (Either TRUE or FALSE)
-#' @param norm1 Logical indicating if the data have been normalized.
-#' (Either TRUE or FALSE)
-#' @param ref1 Reference annotation list for assigning compound details and
-#' class information (provided as a .txt file).
 #' @return List containing formatted input data and metadata
 #' for downstream analysis.
 #' @examples
@@ -227,7 +220,9 @@ ms_input <- function( # nolint
 #' # )
 #'
 #' @export
-ms_add_anno <- function(f) {
+ms_add_anno <- function(
+  f
+) {
   # load dataset
   d_prev3 <- read.table(
     "data/data.pnnl.balf.txt",

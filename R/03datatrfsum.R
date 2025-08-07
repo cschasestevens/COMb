@@ -17,6 +17,12 @@
 #'
 #' # ms_data_check(d)
 #'
+#' @import dplyr
+#' @import ggplot2
+#' @import magrittr
+#' @import circlize
+#' @import ComplexHeatmap
+#' @import ggpubr
 #' @export
 ms_data_check <- function(
   ld,
@@ -123,7 +129,7 @@ ms_data_check <- function(
         title = paste(n1, "Data Distribution"),
         y = "Density"
       ) +
-      ms_theme1() + # nolint
+      ms_theme() + # nolint
       ggplot2::theme(
         plot.margin = ggplot2::unit(c(rep(0.5, 4)), "cm")
       )
@@ -241,6 +247,15 @@ ms_data_check <- function(
 #' @examples
 #'
 #' # ms_data_check(d)
+#'
+#' @import dplyr
+#' @import reshape2
+#' @import magrittr
+#' @import ComplexHeatmap
+#' @import circlize
+#' @import ggplot2
+#' @import grid
+#' @import ggpubr
 #'
 #' @export
 tms_data_check <- function(
@@ -523,6 +538,8 @@ tms_data_check <- function(
 #' #   md = ld[["wash"]][["meta"]]
 #' # )
 #'
+#' @import dplyr
+#' @import magrittr
 #' @export
 ms_blank_sub <- function(
   dat,
@@ -658,7 +675,7 @@ ms_blank_sub <- function(
     paste(
       length(dfilt[lfilt[["Remove"]], "Name"]),
       " of ",
-      nrow(dfilt) - 
+      nrow(dfilt) -
         length(lfilt[
           grepl("PUHA|CUDA|d3-|d4-|d5-|d6-|d7-|d8-|d11-", lfilt[["Name"]]),
           "Name"

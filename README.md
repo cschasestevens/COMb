@@ -70,7 +70,7 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
-* 1.0
+* 1.00
     * Initial Release
 
 ## License

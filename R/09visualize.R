@@ -98,6 +98,7 @@ ms_plot_volcano <- function(
 #' which is only used if plotting a heatmap annotation.
 #' @param c_list Comparison list, provided as a vector.
 #' @param diff_col Column name containing effect size.
+#' @param comp_col Fold change comparison column.
 #' @param p_col Column name containing adjusted p-values.
 #' @param an1 Variable names used for annotating the heatmap.
 #' @param hm_w Heatmap width.

@@ -18,6 +18,8 @@
 #' #   mtd = "tic"
 #' # )
 #'
+#' @import dplyr
+#' @import parallel
 #' @export
 ms_data_norm <- function( # nolint
   ld1,
@@ -49,7 +51,7 @@ ms_data_norm <- function( # nolint
                 round(0.1 * min(d1[d1 > 0]), digits = 0),
                 d1
               )
-              return(d1)
+              return(d1) # nolint
             }
           )
         ),
@@ -111,7 +113,7 @@ ms_data_norm <- function( # nolint
                 round(0.1 * min(d1[d1 > 0]), digits = 0),
                 d1
               )
-              return(d1)
+              return(d1) # nolint
             }
           )
         ),
@@ -185,7 +187,7 @@ ms_data_norm <- function( # nolint
                 round(0.1 * min(d1[d1 > 0]), digits = 0),
                 d1
               )
-              return(d1)
+              return(d1) # nolint
             }
           )
         ),
@@ -308,7 +310,7 @@ ms_data_norm <- function( # nolint
                 round(0.1 * min(d1[d1 > 0]), digits = 0),
                 d1
               )
-              return(d1)
+              return(d1) # nolint
             }
           )
         ),
@@ -443,6 +445,7 @@ ms_data_norm <- function( # nolint
 #' #   var_g = "Group"
 #' # )
 #'
+#' @import ggplot2
 #' @export
 ms_plot_tic <- function(
   df,
@@ -490,5 +493,5 @@ ms_plot_tic <- function(
     ggplot2::labs(y = "TIC",
       x = "Sample ID"
     ) +
-    ms_theme1() # nolint
+    ms_theme() # nolint
 }
