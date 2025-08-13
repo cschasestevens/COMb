@@ -242,6 +242,7 @@ ms_data_check <- function(
 #' @param hh2 Correction heatmap height.
 #' @param fsr Heatmap row names fontsize.
 #' @param fsc Heatmap column names fontsize.
+#' @param trans Transpose input data?
 #' @return List containing formatted input data and metadata
 #' for downstream analysis.
 #' @examples
@@ -271,14 +272,18 @@ tms_data_check <- function(
   hw2 = 20,
   hh2 = 20,
   fsr = 8,
-  fsc = 8
+  fsc = 8,
+  trans = FALSE
 ) {
   # input data and metadata
   ld1 <- dat
   md1 <- md
   mdv <- md_var
   # Check presence/absence for each sample group
-  dchk <- setNames(as.data.frame(t(ld1)), rownames(ld1))
+  if(trans == FALSE) {dchk <- ld1} # nolint
+  if(trans == TRUE) { # nolint
+    dchk <- setNames(as.data.frame(t(ld1)), rownames(ld1))
+  }
   dchk2 <- dplyr::bind_rows(lapply(
     seq.int(1, ncol(dchk), 1),
     function(x) {
@@ -286,7 +291,7 @@ tms_data_check <- function(
         dchk[[x]],
         list(md1[[mdv]]),
         function(y) {
-          d1 <- y > 0
+          d1 <- y > 0 & !is.na(y)
           d1 <- length(d1[d1 == TRUE])
         }
       ), c("Group", "detected"))
@@ -347,23 +352,29 @@ tms_data_check <- function(
   ### replace NA with 0
   dimr[["imputed"]][is.na(dimr[["imputed"]])] <- 0
   ### remove missing compounds
-  dimr[["imputed"]] <- dimr[["imputed"]][rowSums(dimr[["imputed"]]) > 0, ]
+  if(trans == FALSE) { # nolint
+    dimr[["imputed"]] <- dimr[["imputed"]][colSums(dimr[["imputed"]]) > 0]
+  }
+  if(trans == TRUE) { # nolint
+    dimr[["imputed"]] <- dimr[["imputed"]][rowSums(dimr[["imputed"]]) > 0, ]
+  }
   ### replace zeroes with 1/10th of the lowest non-zero
   ### value per compound
-  dimr[["imputed"]] <- setNames(as.data.frame(
+  dimr[["imputed"]] <- magrittr::set_rownames(dplyr::bind_cols(
     lapply(
-      seq.int(1, nrow(dimr[["imputed"]]), 1),
+      seq.int(1, ncol(dimr[["imputed"]]), 1),
       function(x) {
-        d1 <- t(dimr[["imputed"]][x, ])
+        d1 <- dimr[["imputed"]][[x]]
         d1 <- ifelse(
           d1 == 0,
-          round(0.1 * min(d1[d1 > 0]), digits = 2),
+          0.1 * min(d1[d1 > 0]),
           d1
         )
+        d1 <- setNames(as.data.frame(d1), names(dimr[["imputed"]])[[x]])
         return(d1) # nolint
       }
     )
-  ), row.names(dimr[["imputed"]]))
+  ), rownames(dimr[["imputed"]]))
   ## Log2-transformation
   dimr[["data.log2"]] <- magrittr::set_rownames(setNames(
     as.data.frame(
@@ -493,11 +504,11 @@ tms_data_check <- function(
     show_row_names = TRUE,
     cluster_columns = TRUE,
     cluster_rows = TRUE,
-    heatmap_width = ggplot2::unit(hw2, "cm"),
-    heatmap_height = ggplot2::unit(hh2, "cm"),
+    heatmap_width = ggplot2::unit(20, "cm"),
+    heatmap_height = ggplot2::unit(20, "cm"),
     column_title = "Sample Correlation",
-    row_names_gp = grid::gpar(fontsize = fsr),
-    column_names_gp = grid::gpar(fontsize = fsc)
+    row_names_gp = grid::gpar(fontsize = 8),
+    column_names_gp = grid::gpar(fontsize = 8)
   )
   # Dimension reduction plot
   dimr[["dimr"]] <- ms_dim_rd(
@@ -505,7 +516,8 @@ tms_data_check <- function(
     md = dimr[["meta"]],
     md_var = md_var,
     dim_type = dimtype,
-    p_lab = plab
+    p_lab = plab,
+    data_scale = FALSE
   )
   return(dimr)
 }

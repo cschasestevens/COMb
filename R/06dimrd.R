@@ -67,23 +67,24 @@ ms_dim_rd <- function( # nolint
     ### replace NA with 0
     dimr[["imputed"]][is.na(dimr[["imputed"]])] <- 0
     ### remove missing compounds
-    dimr[["imputed"]] <- dimr[["imputed"]][rowSums(dimr[["imputed"]]) > 0, ]
+    dimr[["imputed"]] <- dimr[["imputed"]][colSums(dimr[["imputed"]]) > 0]
     ### replace zeroes with 1/10th of the lowest non-zero
     ### value per compound
-    dimr[["imputed"]] <- setNames(as.data.frame(
+    dimr[["imputed"]] <- magrittr::set_rownames(dplyr::bind_cols(
       lapply(
-        seq.int(1, nrow(dimr[["imputed"]]), 1),
+        seq.int(1, ncol(dimr[["imputed"]]), 1),
         function(x) {
-          d1 <- t(dimr[["imputed"]][x, ])
+          d1 <- dimr[["imputed"]][[x]]
           d1 <- ifelse(
             d1 == 0,
-            round(0.1 * min(d1[d1 > 0]), digits = 2),
+            0.1 * min(d1[d1 > 0]),
             d1
           )
+          d1 <- setNames(as.data.frame(d1), names(dimr[["imputed"]])[[x]])
           return(d1) # nolint
         }
       )
-    ), row.names(dimr[["imputed"]]))
+    ), rownames(dimr[["imputed"]]))
     ## Log2-transformation
     dimr[["data.log2"]] <- magrittr::set_rownames(setNames(
       as.data.frame(
@@ -111,7 +112,6 @@ ms_dim_rd <- function( # nolint
       ),
       c(names(dimr[["data.log2"]]))
     )
-    dimr[["input"]] <- as.data.frame(t(dimr[["input"]]))
   }
   if(dim_type == "PCA") { # nolint
     p1 <- prcomp(dimr[["input"]])

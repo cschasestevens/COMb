@@ -2289,3 +2289,75 @@ ms_plot_scatter <- function(
       )
   }
 }
+
+#' Violin Plot
+#'
+#' Generates a violin plot from an input data frame.
+#'
+#' @param df1 Input data frame.
+#' @param xvar X-axis variable.
+#' @param yvar Y-axis variable.
+#' @param clvar Group variable.
+#' @param plab Plot y-axis label.
+#' @return A violin plot for the chosen treatment comparisons.
+#' @examples
+#'
+#' # ms_plot_violin(
+#' #   df1 = dox,
+#' #   xvar = "rt",
+#' #   yvar = "mz"
+#' # )
+#'
+#' @export
+ms_plot_vio <- function(
+  df1,
+  xvar,
+  yvar,
+  clvar = "Group",
+  plab = "nM / ng per million cells"
+) {
+  pv <- ggplot2::ggplot(
+    data = df1,
+    ggplot2::aes(
+      x = .data[[xvar]], # nolint
+      y = .data[[yvar]],
+      fill = .data[[clvar]]
+    )
+  ) +
+    ggplot2::scale_fill_manual(
+      name = clvar,
+      values = col_univ()
+    ) +
+    # Add violin plot and dotplot
+    ggplot2::geom_violin(
+      trim = TRUE
+    ) +
+    ggplot2::geom_jitter(
+      ggplot2::aes(
+        alpha = 0.2
+      ),
+      shape = 16,
+      size = 1,
+      position = ggplot2::position_jitter(
+        width = 0.1
+      ),
+      show.legend = FALSE
+    ) +
+    # Add Theme
+    ms_theme() + # nolint
+    ggplot2::labs(
+      y = plab
+    ) +
+    ggplot2::theme(
+      plot.margin = ggplot2::unit(
+        c(
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ),
+        "cm"
+      )
+    )
+  return(pv) # nolint
+}
