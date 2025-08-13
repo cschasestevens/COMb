@@ -17,7 +17,8 @@ tms_data_check(
   hw2 = 20,
   hh2 = 20,
   fsr = 8,
-  fsc = 8
+  fsc = 8,
+  trans = FALSE
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ or "UMAP" (default).}
 \item{fsr}{Heatmap row names fontsize.}
 
 \item{fsc}{Heatmap column names fontsize.}
+
+\item{trans}{Transpose input data?}
 }
 \value{
 List containing formatted input data and metadata
