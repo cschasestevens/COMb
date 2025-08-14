@@ -1,4 +1,4 @@
-# COMb v1.00 (20250715)
+# COMb v1.00 (20250814)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
