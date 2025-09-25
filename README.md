@@ -1,4 +1,4 @@
-# COMb v1.00 (20250814)
+# COMb v1.01 (20250925)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -70,6 +70,8 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 1.01
+    * Added function for preprocessing alignment results exported from MS-DIAL
 * 1.00
     * Initial Release
 

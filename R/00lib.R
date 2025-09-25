@@ -51,7 +51,10 @@ col_grad <- function(
     c1 <- c("lightblue", "red", "darkred")
   }
   if(scm == 5) { # nolint
-    c1 <- c("dodgerblue4", "white", "darkred")
+    c1 <- c("#2e86c1", "white", "#e74c3c")
+  }
+  if(scm == 6) { # nolint
+    c1 <- c("dodgerblue4", "#2e86c1", "white", "#e74c3c")
   }
   return(c1)
 }
@@ -119,6 +122,81 @@ ms_theme <- function(leg = c(0.95, 0.95)) {
     )
   )
 
+  thm_leg_main <- ggplot2::theme(
+    legend.title = ggplot2::element_text(
+      size = 14,
+      face = "bold"
+    ),
+    legend.text = ggplot2::element_text(size = 10),
+    legend.key.size = ggplot2::unit(0.2, "cm"),
+    legend.key = ggplot2::element_blank(),
+    legend.position.inside = leg
+  )
+  thm_mult <- thm_gen +
+    thm_leg_main
+  return(thm_mult) # nolint
+}
+
+#' Alternate Plot Theme
+#'
+#' Alternate plotting theme showing more details on the x and y axes.
+#'
+#' @param leg Plot legend coordinates.
+#'
+#' @return ggplot2 theme parameters to replace default plot theme.
+#' @import ggplot2
+#' @examples
+#'
+#' # ms_theme_alt1()
+#'
+#' @export
+ms_theme_alt1 <- function(leg = c(0.95, 0.95)) {
+  thm_gen <- ggplot2::theme(
+    # Plot Title
+    plot.title = ggplot2::element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    # Panel
+    panel.border = ggplot2::element_blank(),
+    panel.background = ggplot2::element_blank(),
+    panel.grid.major.y = ggplot2::element_line(colour = "grey85"),
+    panel.grid.major.x = ggplot2::element_line(colour = "grey85"),
+    # Axes
+    axis.text.x = ggplot2::element_text(
+      face = "bold",
+      size = 14,
+      angle = 45,
+      hjust = 1,
+      vjust = 1
+    ),
+    axis.text.y = ggplot2::element_text(
+      face = "bold",
+      size = 14
+    ),
+    axis.title.x = ggplot2::element_text(
+      face = "bold",
+      size = 14
+    ),
+    axis.title.y = ggplot2::element_text(
+      face = "bold",
+      size = 14
+    ),
+    # Strip
+    strip.background = ggplot2::element_rect(
+      fill = "slategray2"
+    ),
+    strip.text = ggplot2::element_text(
+      face = "bold",
+      size = 12
+    ),
+    # Margins
+    plot.margin = ggplot2::unit(
+      c(0.5, 0.25, 0.5, 0.25),
+      "cm"
+    )
+  )
   thm_leg_main <- ggplot2::theme(
     legend.title = ggplot2::element_text(
       size = 14,

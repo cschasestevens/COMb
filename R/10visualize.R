@@ -110,6 +110,9 @@ ms_plot_volcano <- function(
 #' @param cn Show column names.
 #' @param rn Show row names.
 #' @param filtp Filter heatmap based on a p-value cutoff of 0.05.
+#' @param scm1 Heatmap color scheme to use.
+#' @param col_fun Color ramp function
+#' (either by 4 quantiles [1] or by upper and lower quantiles[2]).
 #' @return A heatmap for the selected comparisons.
 #' @examples
 #'
@@ -135,7 +138,9 @@ ms_plot_heat <- function(
   cl_r = TRUE,
   cn = TRUE,
   rn = TRUE,
-  filtp = FALSE
+  filtp = FALSE,
+  scm1 = col_grad(scm = 3),
+  col_fun = 1
 ) {
   # Load and subset data
   hd1 <- d_stat
@@ -169,17 +174,31 @@ ms_plot_heat <- function(
     ),
     na.rm = TRUE
   )
-  fun_hm_col <- circlize::colorRamp2(
-    c(
-      qs[[1]],
-      (qs[[1]]) / 2,
-      (qs[[2]]) / 2,
-      qs[[2]]
-    ),
-    colors = c(
-      col_grad(scm = 3)
+  if(col_fun == 1) { # nolint
+    fun_hm_col <- circlize::colorRamp2(
+      c(
+        qs[[1]],
+        (qs[[1]]) / 2,
+        (qs[[2]]) / 2,
+        qs[[2]]
+      ),
+      colors = c(
+        scm1
+      )
     )
-  )
+  }
+  if(col_fun == 2) { # nolint
+    fun_hm_col <- circlize::colorRamp2(
+      c(
+        qs[[1]],
+        0,
+        qs[[2]]
+      ),
+      colors = c(
+        scm1
+      )
+    )
+  }
   if(is.null(an2) == FALSE) { # nolint
     fun_hm_bar <- list(
       "Class" = setNames(
@@ -2357,6 +2376,95 @@ ms_plot_vio <- function(
           0.1
         ),
         "cm"
+      )
+    )
+  return(pv) # nolint
+}
+
+#' Bar Plot
+#'
+#' Generates a bar plot with error bars from an input data frame.
+#'
+#' @param df1 Input data frame.
+#' @param df2 Data frame containing group standard deviations (for error bars).
+#' @param xvar X-axis variable.
+#' @param yvar Y-axis variable.
+#' @param clvar Group variable.
+#' @param plab Plot y-axis label.
+#' @return A violin plot for the chosen treatment comparisons.
+#' @examples
+#'
+#' # ms_plot_bar(
+#' #   df1 = dox,
+#' #   xvar = "rt",
+#' #   yvar = "mz"
+#' # )
+#'
+#' @export
+ms_plot_bar <- function(
+  df1,
+  df2,
+  xvar,
+  yvar,
+  clvar = "Group",
+  plab = "nM / ng per million cells"
+) {
+  pv <- ggplot2::ggplot(
+    data = df1,
+    ggplot2::aes(
+      x = .data[[xvar]], # nolint
+      y = .data[[yvar]],
+      fill = .data[[clvar]]
+    )
+  ) +
+    ggplot2::scale_fill_manual(
+      name = clvar,
+      values = col_univ()
+    ) +
+    # Add barplot
+    ggplot2::geom_bar(
+      stat = "summary",
+      fun = mean,
+      position = "dodge",
+      width = 0.6,
+      color = "grey25"
+    ) +
+    ggplot2::geom_errorbar(
+      data = df2,
+      ggplot2::aes(
+        x = .data[[xvar]],
+        y = .data[["mean"]],
+        ymin = .data[["mean"]] - .data[["sd"]],
+        ymax = .data[["mean"]] + .data[["sd"]]
+      ),
+      position = "dodge",
+      width = 0.6,
+      color = "grey25"
+    ) +
+    # Add Theme
+    ms_theme() + # nolint
+    ggplot2::labs(
+      title = yvar,
+      y = plab,
+      x = ""
+    ) +
+    ggplot2::theme(
+      plot.margin = ggplot2::unit(
+        c(
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ),
+        "cm"
+      ),
+      axis.text.y = ggplot2::element_text(
+        face = "bold",
+        size = 12
+      ),
+      axis.title.y = ggplot2::element_text(
+        face = "bold",
+        size = 12
       )
     )
   return(pv) # nolint
