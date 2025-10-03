@@ -18,6 +18,8 @@
 #' @param col_nm If mtd is "LOESS," provide the column name specifying
 #' the feature and sample names.
 #' @param spn LOESS span.
+#' @param qc_nm QC sample name within the group column (e.g. "Pool").
+#' @param msg Show group RSDs in the console output.
 #' @return A list containing normalized compound intensities and metadata.
 #' @examples
 #'
@@ -37,7 +39,8 @@ ms_data_norm <- function( # nolint
   col_order = "Order",
   col_grp = "Group",
   col_nm = "Label",
-  spn = 0.5
+  qc_nm = "Pool",
+  msg = FALSE
 ) {
   # Load objects
   d <- ld1[["data"]]
@@ -445,15 +448,6 @@ ms_data_norm <- function( # nolint
   if (mtd == "LOESS") {
     print("Performing LOESS normalization...")
     if (Sys.info()[["sysname"]] != "Windows") {
-      # Load objects
-      d <- d_norm[["pos_cells"]][["data"]]
-      mpx <- d_norm[["pos_cells"]][["meta"]]
-      mft <- d_norm[["pos_cells"]][["anno"]]
-      # Remove blanks
-      if (bl_rem == TRUE && mtd == "LOESS") {
-        mpx <- mpx[mpx[["File type"]] != "Blank", ]
-        d <- d[names(d) %in% mpx[["ID"]]]
-      }
       # LOESS Normalization
       d1 <- dplyr::bind_cols(
         parallel::mclapply(
@@ -461,109 +455,145 @@ ms_data_norm <- function( # nolint
           seq.int(1, nrow(d), 1),
           function(i) {
             iter <- i
+            print(
+              paste("Normalizing compound ", iter, " of ", nrow(d), sep = "")
+            )
             #---- Train LOESS ----
             dl <- data.frame(
-              "x" = mpx[mpx[["File type"]] == "QC", ][["Order"]],
+              "type" = mpx[[bl_col]],
+              "x" = mpx[[col_order]],
               "y" = unlist(d[
-                13,
-                names(d) %in% mpx[mpx[["File type"]] == "QC", ][["ID"]]
+                iter,
               ])
             )
-            dl <- data.frame(
-              "type" = mpx[["File type"]],
-              "x" = mpx[["Order"]],
-              "y" = unlist(d[
-                13,
-              ])
-            )
-            # pre-norm QC RSD
-            (sd(dl[["y"]]) / mean(dl[["y"]])) * 100
-            (sd(fit[["int"]]) / mean(fit[["int"]])) * 100
             dl <- dl[order(dl[["x"]]), ]
-            # Fit model
-            fit <- dplyr::mutate(
-              dl,
-              "int" = predict(
-                loess(
-                  dl[["y"]] ~ dl[["x"]],
-                  data = dl,
-                  ## set span equal to proportion of largest
-                  ## group size relative to total samples
-                  span = 0.25
+            if (sum(dl[["y"]]) == 0) {
+              print("Compound intensities are all 0; returning original data")
+              fit[["norm"]] <- dl[["y"]]
+            }
+            if (sum(dl[["y"]]) > 0) {
+              if (length(dl[dl[["y"]] <= 0, ][["y"]]) > 0) {
+                dl[dl[["y"]] <= 0, ][["y"]] <- round(
+                  0.1 * min(dl[dl[["y"]] > 0, ][["y"]]),
+                  digits = 2
+                )
+              }
+              # Fit model
+              fit <- dplyr::mutate(
+                dl,
+                "int" = predict(
+                  loess(
+                    dl[["y"]] ~ dl[["x"]],
+                    data = dl,
+                    ## set span equal to proportion of largest
+                    ## group size relative to total samples
+                    span = max(
+                      dplyr::count(mpx, mpx[[col_grp]])[[2]]
+                    ) / nrow(mpx)
+                  )
                 )
               )
-            )
-            max(
-              dplyr::count(mpx, mpx[["Group"]])[[2]]
-            ) / (nrow(mpx) * 0.25)
-            ggplot2::ggplot() +
-            ggplot2::geom_point(
-              data = fit,
-              ggplot2::aes(
-                x = .data[["x"]],
-                y = .data[["int"]]
-              ),
-              color = "red",
-              shape = 16
-            ) +
-            ggplot2::geom_point(
-              data = fit,
-              ggplot2::aes(
-                x = .data[["x"]],
-                y = .data[["y"]],
-                color = .data[["type"]]
-              ),
-              shape = 16
-            ) +
-            ggplot2::geom_point(
-              data = fit,
-              ggplot2::aes(
-                x = .data[["x"]],
-                y = .data[["norm"]]
-              ),
-              color = "blue"
-            )
-            # START HERE: edit formula for calculating normalized peak heights
-            # need to create formula that will increase normalization factor
-            # for observations further away from best fit curve
-
-
-            #---- Normalize based on fitted model ----
-            fit[["y"]] / fit[["int"]]
-            abs(fit[["y"]] - fit[["int"]])
-            fit[["y"]] 
-            fit[["norm"]] <- round(
-              (fit[["y"]] / fit[["int"]]) *
-                mean(fit[["y"]]),
-              digits = 0
-            )
-            print("Group RSD changed from:")
-            print(aggregate(
-              x = fit[["y"]],
-              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
-              function(x) {
-                d1 <- data.frame(
-                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
-                  "mean" = round(mean(x), digits = 0),
-                  "sd" = round(sd(x), digits = 0)
+              # Replace negative values with 1/10th minimum value
+              # of normalized intensity
+              if (length(fit[fit[["int"]] <= 0, ][["int"]]) > 0) {
+                fit[fit[["int"]] <= 0, ][["int"]] <- round(
+                  0.1 * min(fit[fit[["int"]] > 0, ][["int"]]),
+                  digits = 2
                 )
-                return(d1) # nolint
               }
-            ))
-            print("to:")
-            print(aggregate(
-              x = fit[["norm"]],
-              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
-              function(x) {
-                d1 <- data.frame(
-                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
-                  "mean" = round(mean(x), digits = 0),
-                  "sd" = round(sd(x), digits = 0)
+              #---- Normalize based on fitted model using MA method ----
+              ## Minus
+              fit[["M"]] <- log2(fit[["y"]] / fit[["int"]])
+              ## Average
+              fit[["A"]] <- log2(fit[["y"]] * fit[["int"]]) / 2
+              # Corrected MA
+              fit[["MAnorm"]] <- loess(
+                fit[["M"]] ~ fit[["A"]],
+                span = max(
+                  dplyr::count(mpx, mpx[[col_grp]])[[2]]
+                ) / nrow(mpx)
+              )[["residuals"]]
+              if (length(fit[is.na(fit[["MAnorm"]]), ][["MAnorm"]]) > 0) {
+                fit[["MAnorm2"]] <- fit[["MAnorm"]]
+                fit[is.na(fit[["MAnorm2"]]), ][["MAnorm2"]] <- 0
+              }
+              if (length(fit[is.na(fit[["MAnorm"]]), ][["MAnorm"]]) == 0) {
+                fit[["MAnorm2"]] <- fit[["MAnorm"]]
+              }
+              ## calculate normalized values
+              fit[["norm"]] <- (
+                2 ^ ((log2(fit[["y"]]) - fit[["MAnorm2"]]) / 2) /
+                  2 ^ ((log2(fit[["int"]]) - fit[["MAnorm2"]]) / 2)
+              ) *
+                mean(fit[["y"]])
+              if (
+                length(
+                  fit[
+                    fit[["norm"]] <= 0 |
+                      is.na(fit[["MAnorm"]]),
+                  ][["norm"]]
+                ) > 0
+              ) {
+                fit[
+                  fit[["norm"]] <= 0 |
+                    is.na(fit[["MAnorm"]]),
+                ][["norm"]] <- round(
+                  0.1 * min(fit[fit[["norm"]] > 0, ][["norm"]]),
+                  digits = 0
                 )
-                return(d1) # nolint
               }
-            ))
-            print("After LOESS normalization")
+              ## pre and post-normalization QC RSD
+              ### pre
+              (sd(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["y"]]) / mean(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["y"]])) * 100
+              ### post
+              (sd(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["norm"]]) / mean(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["norm"]])) * 100
+              # Output normalized data
+              if (msg == TRUE) {
+                print("Group RSD changed from:")
+                print(aggregate(
+                  x = fit[["y"]],
+                  list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+                  function(x) {
+                    d1 <- data.frame(
+                      "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                      "mean" = round(mean(x), digits = 0),
+                      "sd" = round(sd(x), digits = 0)
+                    )
+                    return(d1) # nolint
+                  }
+                ))
+                print("to:")
+                print(aggregate(
+                  x = fit[["norm"]],
+                  list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+                  function(x) {
+                    d1 <- data.frame(
+                      "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                      "mean" = round(mean(x), digits = 0),
+                      "sd" = round(sd(x), digits = 0)
+                    )
+                    return(d1) # nolint
+                  }
+                ))
+                print("After LOESS normalization")
+              }
+            }
             dl2 <- as.data.frame(magrittr::set_rownames(
               setNames(
                 as.data.frame(fit[["norm"]]),
@@ -571,8 +601,6 @@ ms_data_norm <- function( # nolint
               ),
               mpx[order(mpx[[col_order]]), ][[col_nm]]
             ))
-            dl2[is.na(dl2)] <- 0
-            dl2[dl2 < 0] <- 0
             return(dl2) # nolint
           }
         )
@@ -585,60 +613,145 @@ ms_data_norm <- function( # nolint
           seq.int(1, nrow(d), 1),
           function(i) {
             iter <- i
+            print(
+              paste("Normalizing compound ", iter, " of ", nrow(d), sep = "")
+            )
             #---- Train LOESS ----
             dl <- data.frame(
+              "type" = mpx[[bl_col]],
               "x" = mpx[[col_order]],
               "y" = unlist(d[
                 iter,
               ])
             )
             dl <- dl[order(dl[["x"]]), ]
-            # Fit model
-            fit <- dplyr::mutate(
-              dl,
-              "int" = predict(
-                loess(
-                  dl[["y"]] ~ dl[["x"]],
-                  data = dl,
-                  ## set span equal to proportion of largest
-                  ## group size relative to total samples
-                  span = spn
+            if (sum(dl[["y"]]) == 0) {
+              print("Compound intensities are all 0; returning original data")
+              fit[["norm"]] <- dl[["y"]]
+            }
+            if (sum(dl[["y"]]) > 0) {
+              if (length(dl[dl[["y"]] <= 0, ][["y"]]) > 0) {
+                dl[dl[["y"]] <= 0, ][["y"]] <- round(
+                  0.1 * min(dl[dl[["y"]] > 0, ][["y"]]),
+                  digits = 2
+                )
+              }
+              # Fit model
+              fit <- dplyr::mutate(
+                dl,
+                "int" = predict(
+                  loess(
+                    dl[["y"]] ~ dl[["x"]],
+                    data = dl,
+                    ## set span equal to proportion of largest
+                    ## group size relative to total samples
+                    span = max(
+                      dplyr::count(mpx, mpx[[col_grp]])[[2]]
+                    ) / nrow(mpx)
+                  )
                 )
               )
-            )
-            #---- Normalize based on fitted model ----
-            fit[["norm"]] <- round(
-              (fit[["y"]] / fit[["int"]]) *
-                mean(fit[["y"]]),
-              digits = 0
-            )
-            print("Group RSD changed from:")
-            print(aggregate(
-              x = fit[["y"]],
-              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
-              function(x) {
-                d1 <- data.frame(
-                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
-                  "mean" = round(mean(x), digits = 0),
-                  "sd" = round(sd(x), digits = 0)
+              # Replace negative values with 1/10th minimum value
+              # of normalized intensity
+              if (length(fit[fit[["int"]] <= 0, ][["int"]]) > 0) {
+                fit[fit[["int"]] <= 0, ][["int"]] <- round(
+                  0.1 * min(fit[fit[["int"]] > 0, ][["int"]]),
+                  digits = 2
                 )
-                return(d1) # nolint
               }
-            ))
-            print("to:")
-            print(aggregate(
-              x = fit[["norm"]],
-              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
-              function(x) {
-                d1 <- data.frame(
-                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
-                  "mean" = round(mean(x), digits = 0),
-                  "sd" = round(sd(x), digits = 0)
+              #---- Normalize based on fitted model using MA method ----
+              ## Minus
+              fit[["M"]] <- log2(fit[["y"]] / fit[["int"]])
+              ## Average
+              fit[["A"]] <- log2(fit[["y"]] * fit[["int"]]) / 2
+              # Corrected MA
+              fit[["MAnorm"]] <- loess(
+                fit[["M"]] ~ fit[["A"]],
+                span = max(
+                  dplyr::count(mpx, mpx[[col_grp]])[[2]]
+                ) / nrow(mpx)
+              )[["residuals"]]
+              if (length(fit[is.na(fit[["MAnorm"]]), ][["MAnorm"]]) > 0) {
+                fit[["MAnorm2"]] <- fit[["MAnorm"]]
+                fit[is.na(fit[["MAnorm2"]]), ][["MAnorm2"]] <- 0
+              }
+              if (length(fit[is.na(fit[["MAnorm"]]), ][["MAnorm"]]) == 0) {
+                fit[["MAnorm2"]] <- fit[["MAnorm"]]
+              }
+              ## calculate normalized values
+              fit[["norm"]] <- (
+                2 ^ ((log2(fit[["y"]]) - fit[["MAnorm2"]]) / 2) /
+                  2 ^ ((log2(fit[["int"]]) - fit[["MAnorm2"]]) / 2)
+              ) *
+                mean(fit[["y"]])
+              if (
+                length(
+                  fit[
+                    fit[["norm"]] <= 0 |
+                      is.na(fit[["MAnorm"]]),
+                  ][["norm"]]
+                ) > 0
+              ) {
+                fit[
+                  fit[["norm"]] <= 0 |
+                    is.na(fit[["MAnorm"]]),
+                ][["norm"]] <- round(
+                  0.1 * min(fit[fit[["norm"]] > 0, ][["norm"]]),
+                  digits = 0
                 )
-                return(d1) # nolint
               }
-            ))
-            print("After LOESS normalization")
+              ## pre and post-normalization QC RSD
+              ### pre
+              (sd(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["y"]]) / mean(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["y"]])) * 100
+              ### post
+              (sd(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["norm"]]) / mean(fit[
+                fit[["x"]] %in%
+                  mpx[mpx[[col_grp]] == qc_nm, ][[col_order]]
+                ,
+              ][["norm"]])) * 100
+              # Output normalized data
+              if (msg == TRUE) {
+                print("Group RSD changed from:")
+                print(aggregate(
+                  x = fit[["y"]],
+                  list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+                  function(x) {
+                    d1 <- data.frame(
+                      "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                      "mean" = round(mean(x), digits = 0),
+                      "sd" = round(sd(x), digits = 0)
+                    )
+                    return(d1) # nolint
+                  }
+                ))
+                print("to:")
+                print(aggregate(
+                  x = fit[["norm"]],
+                  list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+                  function(x) {
+                    d1 <- data.frame(
+                      "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                      "mean" = round(mean(x), digits = 0),
+                      "sd" = round(sd(x), digits = 0)
+                    )
+                    return(d1) # nolint
+                  }
+                ))
+                print("After LOESS normalization")
+              }
+            }
             dl2 <- as.data.frame(magrittr::set_rownames(
               setNames(
                 as.data.frame(fit[["norm"]]),
@@ -646,8 +759,6 @@ ms_data_norm <- function( # nolint
               ),
               mpx[order(mpx[[col_order]]), ][[col_nm]]
             ))
-            dl2[is.na(dl2)] <- 0
-            dl2[dl2 < 0] <- 0
             return(dl2) # nolint
           }
         )
@@ -655,7 +766,7 @@ ms_data_norm <- function( # nolint
     }
     d1 <- list(
       "data" = d1,
-      "meta" = mpx,
+      "meta" = mpx[order(mpx[["Order"]]), ],
       "anno" = mft,
       "norm.method" = "LOESS"
     )

@@ -1,3 +1,69 @@
+# QC (MA plot and normalization plot)
+ggplot2::ggplot() +
+  ggplot2::geom_point(
+    data = fit,
+    ggplot2::aes(
+      x = .data[["x"]],
+      y = .data[["y"]],
+      color = .data[["type"]]
+    ),
+    shape = 16
+  ) +
+  ggplot2::geom_point(
+    data = fit,
+    ggplot2::aes(
+      x = .data[["x"]],
+      y = .data[["int"]]
+    ),
+    color = "purple",
+    shape = 16
+  ) +
+  ggplot2::geom_hline(
+    yintercept = mean(fit[["y"]]),
+    linetype = "dashed"
+  ) +
+  ggplot2::geom_point(
+    data = fit,
+    ggplot2::aes(
+      x = .data[["x"]],
+      y = .data[["norm"]]
+    ),
+    color = "orange"
+  )
+
+ggplot2::ggplot(data = fit) +
+  ggplot2::geom_point(
+    ggplot2::aes(
+      x = .data[["A"]],
+      y = .data[["M"]],
+      color = .data[["type"]]
+    ),
+    shape = 16
+  ) +
+  ggplot2::geom_point(
+    ggplot2::aes(
+      x = .data[["A"]],
+      y = .data[["MAnorm"]]
+    ),
+    shape = 16,
+    color = "purple"
+  ) +
+  ggplot2::geom_smooth(
+    ggplot2::aes(
+      x = .data[["A"]],
+      y = .data[["M"]]
+    ),
+    color = "red"
+  ) +
+  ggplot2::geom_smooth(
+    ggplot2::aes(
+      x = .data[["A"]],
+      y = .data[["MAnorm"]]
+    ),
+    color = "blue"
+  )
+
+
 #' Data Transformation, Scaling and Quality Check
 #'
 #' Performs data imputation, log2-transformation, scaling, and
