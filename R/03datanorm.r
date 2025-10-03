@@ -5,36 +5,53 @@
 #' Planned methods include iSTD, SERRF, and LOESS.
 #'
 #' @param ld1 List data object generated from ms_input().
-#' @param mtd Normalization method (either "none" or "tic").
-#' @param parl (optional) Logical indicating if normalization
-#' should be performed in parallel.
-#' @param core_perc (optional) Percentage of cores to use for parallel
-#' normalization.
+#' @param mtd Normalization method (either "none", "tic", or "LOESS").
+#' @param bl_rem Should blank samples be removed from the input data?
+#' @param bl_col If bl_rem is TRUE, provides the column name including
+#' sample groups or identities, including blanks.
+#' @param bl_nm Character string for detecting blank samples.
+#' @param col_id Name of the sample ID column.
+#' @param col_order If mtd is "LOESS," provide the column name specifying
+#' the sample injection order.
+#' @param col_grp If mtd is "LOESS," provide the column name specifying
+#' the sample group information for calculating span.
+#' @param col_nm If mtd is "LOESS," provide the column name specifying
+#' the feature and sample names.
+#' @param spn LOESS span.
 #' @return A list containing normalized compound intensities and metadata.
 #' @examples
 #'
-#' # d_norm <- ms_data_norm(
-#' #   dm = d_norm[["Data"]],
-#' #   mtd = "tic"
-#' # )
+#' # d_norm <- ms_data_norm(ld1 = d_norm[["Data"]])
 #'
 #' @import dplyr
 #' @import parallel
+#' @import magrittr
 #' @export
 ms_data_norm <- function( # nolint
   ld1,
-  mtd,
-  parl = FALSE,
-  core_perc = NULL
+  mtd = "LOESS",
+  bl_rem = TRUE,
+  bl_col = "File type",
+  bl_nm = "Blank",
+  col_id = "ID",
+  col_order = "Order",
+  col_grp = "Group",
+  col_nm = "Label",
+  spn = 0.5
 ) {
   # Load objects
   d <- ld1[["data"]]
   mpx <- ld1[["meta"]]
   mft <- ld1[["anno"]]
+  # Remove blanks
+  if (bl_rem == TRUE && mtd == "LOESS") {
+    mpx <- mpx[mpx[[bl_col]] != bl_nm, ]
+    d <- d[names(d) %in% mpx[[col_id]]]
+  }
   # No normalization
   if(mtd == "none") { # nolint
     print("Performing no normalization...")
-    if(Sys.info()[["sysname"]] == "Windows" | parl == FALSE) { # nolint
+    if (Sys.info()[["sysname"]] == "Windows") { # nolint
       d <- as.data.frame(d)
       # data imputation
       ## replace zeroes or NA with 1/10th of
@@ -96,7 +113,7 @@ ms_data_norm <- function( # nolint
       mpx[["RSD.median.post"]] <- mpx[["RSD.median.pre"]]
       mpx[["ID"]] <- seq.int(1, nrow(mpx), 1)
     }
-    if(parl == TRUE) { # nolint
+    if (Sys.info()[["sysname"]] != "Windows") { # nolint
       d <- as.data.frame(d)
       # data imputation
       ## replace zeroes or NA with 1/10th of
@@ -139,7 +156,7 @@ ms_data_norm <- function( # nolint
               median(
                 as.data.frame(t(dplyr::bind_cols(
                   parallel::mclapply(
-                    mc.cores = core_perc,
+                    mc.cores = ceiling(parallel::detectCores() / 2),
                     seq.int(1, ncol(d), 1),
                     function(y) {
                       setNames(as.data.frame(aggregate(
@@ -169,9 +186,9 @@ ms_data_norm <- function( # nolint
   # TIC normalization
   if(mtd == "tic") { # nolint
     print("Performing TIC normalization...")
-    if(Sys.info()[["sysname"]] == "Windows" | parl == FALSE) { # nolint
+    if (Sys.info()[["sysname"]] == "Windows") { # nolint
       print(
-        "Detected OS is Windows or parl is FALSE;
+        "Detected OS is Windows;
         Defaulting to sequential processing..."
       )
       d <- as.data.frame(d)
@@ -294,9 +311,7 @@ ms_data_norm <- function( # nolint
       ))
       mpx[["ID"]] <- seq.int(1, nrow(mpx), 1)
     }
-    if(Sys.info()[["sysname"]] != "Windows" && # nolint
-        parl == TRUE
-    ) {
+    if (Sys.info()[["sysname"]] != "Windows") {
       d <- as.data.frame(d)
       d <- setNames(
         as.data.frame(
@@ -339,7 +354,7 @@ ms_data_norm <- function( # nolint
               median(
                 as.data.frame(t(dplyr::bind_cols(
                   parallel::mclapply(
-                    mc.cores = core_perc,
+                    mc.cores = ceiling(parallel::detectCores() / 2),
                     seq.int(1, ncol(d), 1),
                     function(y) {
                       setNames(as.data.frame(aggregate(
@@ -395,7 +410,7 @@ ms_data_norm <- function( # nolint
               median(
                 as.data.frame(t(dplyr::bind_cols(
                   parallel::mclapply(
-                    mc.cores = core_perc,
+                    mc.cores = ceiling(parallel::detectCores() / 2),
                     seq.int(1, ncol(d), 1),
                     function(y) {
                       setNames(as.data.frame(aggregate(
@@ -424,6 +439,225 @@ ms_data_norm <- function( # nolint
       "meta" = mpx,
       "anno" = mft,
       "norm.method" = "tic"
+    )
+  }
+  # LOESS normalization
+  if (mtd == "LOESS") {
+    print("Performing LOESS normalization...")
+    if (Sys.info()[["sysname"]] != "Windows") {
+      # Load objects
+      d <- d_norm[["pos_cells"]][["data"]]
+      mpx <- d_norm[["pos_cells"]][["meta"]]
+      mft <- d_norm[["pos_cells"]][["anno"]]
+      # Remove blanks
+      if (bl_rem == TRUE && mtd == "LOESS") {
+        mpx <- mpx[mpx[["File type"]] != "Blank", ]
+        d <- d[names(d) %in% mpx[["ID"]]]
+      }
+      # LOESS Normalization
+      d1 <- dplyr::bind_cols(
+        parallel::mclapply(
+          mc.cores = ceiling(parallel::detectCores() / 2),
+          seq.int(1, nrow(d), 1),
+          function(i) {
+            iter <- i
+            #---- Train LOESS ----
+            dl <- data.frame(
+              "x" = mpx[mpx[["File type"]] == "QC", ][["Order"]],
+              "y" = unlist(d[
+                13,
+                names(d) %in% mpx[mpx[["File type"]] == "QC", ][["ID"]]
+              ])
+            )
+            dl <- data.frame(
+              "type" = mpx[["File type"]],
+              "x" = mpx[["Order"]],
+              "y" = unlist(d[
+                13,
+              ])
+            )
+            # pre-norm QC RSD
+            (sd(dl[["y"]]) / mean(dl[["y"]])) * 100
+            (sd(fit[["int"]]) / mean(fit[["int"]])) * 100
+            dl <- dl[order(dl[["x"]]), ]
+            # Fit model
+            fit <- dplyr::mutate(
+              dl,
+              "int" = predict(
+                loess(
+                  dl[["y"]] ~ dl[["x"]],
+                  data = dl,
+                  ## set span equal to proportion of largest
+                  ## group size relative to total samples
+                  span = 0.25
+                )
+              )
+            )
+            max(
+              dplyr::count(mpx, mpx[["Group"]])[[2]]
+            ) / (nrow(mpx) * 0.25)
+            ggplot2::ggplot() +
+            ggplot2::geom_point(
+              data = fit,
+              ggplot2::aes(
+                x = .data[["x"]],
+                y = .data[["int"]]
+              ),
+              color = "red",
+              shape = 16
+            ) +
+            ggplot2::geom_point(
+              data = fit,
+              ggplot2::aes(
+                x = .data[["x"]],
+                y = .data[["y"]],
+                color = .data[["type"]]
+              ),
+              shape = 16
+            ) +
+            ggplot2::geom_point(
+              data = fit,
+              ggplot2::aes(
+                x = .data[["x"]],
+                y = .data[["norm"]]
+              ),
+              color = "blue"
+            )
+            # START HERE: edit formula for calculating normalized peak heights
+            # need to create formula that will increase normalization factor
+            # for observations further away from best fit curve
+
+
+            #---- Normalize based on fitted model ----
+            fit[["y"]] / fit[["int"]]
+            abs(fit[["y"]] - fit[["int"]])
+            fit[["y"]] 
+            fit[["norm"]] <- round(
+              (fit[["y"]] / fit[["int"]]) *
+                mean(fit[["y"]]),
+              digits = 0
+            )
+            print("Group RSD changed from:")
+            print(aggregate(
+              x = fit[["y"]],
+              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+              function(x) {
+                d1 <- data.frame(
+                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                  "mean" = round(mean(x), digits = 0),
+                  "sd" = round(sd(x), digits = 0)
+                )
+                return(d1) # nolint
+              }
+            ))
+            print("to:")
+            print(aggregate(
+              x = fit[["norm"]],
+              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+              function(x) {
+                d1 <- data.frame(
+                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                  "mean" = round(mean(x), digits = 0),
+                  "sd" = round(sd(x), digits = 0)
+                )
+                return(d1) # nolint
+              }
+            ))
+            print("After LOESS normalization")
+            dl2 <- as.data.frame(magrittr::set_rownames(
+              setNames(
+                as.data.frame(fit[["norm"]]),
+                mft[iter, ][[col_nm]]
+              ),
+              mpx[order(mpx[[col_order]]), ][[col_nm]]
+            ))
+            dl2[is.na(dl2)] <- 0
+            dl2[dl2 < 0] <- 0
+            return(dl2) # nolint
+          }
+        )
+      )
+    }
+    if (Sys.info()[["sysname"]] == "Windows") {
+      # LOESS Normalization
+      d1 <- dplyr::bind_cols(
+        lapply(
+          seq.int(1, nrow(d), 1),
+          function(i) {
+            iter <- i
+            #---- Train LOESS ----
+            dl <- data.frame(
+              "x" = mpx[[col_order]],
+              "y" = unlist(d[
+                iter,
+              ])
+            )
+            dl <- dl[order(dl[["x"]]), ]
+            # Fit model
+            fit <- dplyr::mutate(
+              dl,
+              "int" = predict(
+                loess(
+                  dl[["y"]] ~ dl[["x"]],
+                  data = dl,
+                  ## set span equal to proportion of largest
+                  ## group size relative to total samples
+                  span = spn
+                )
+              )
+            )
+            #---- Normalize based on fitted model ----
+            fit[["norm"]] <- round(
+              (fit[["y"]] / fit[["int"]]) *
+                mean(fit[["y"]]),
+              digits = 0
+            )
+            print("Group RSD changed from:")
+            print(aggregate(
+              x = fit[["y"]],
+              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+              function(x) {
+                d1 <- data.frame(
+                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                  "mean" = round(mean(x), digits = 0),
+                  "sd" = round(sd(x), digits = 0)
+                )
+                return(d1) # nolint
+              }
+            ))
+            print("to:")
+            print(aggregate(
+              x = fit[["norm"]],
+              list(mpx[order(mpx[[col_order]]), ][[col_grp]]),
+              function(x) {
+                d1 <- data.frame(
+                  "RSD" = round((sd(x) / mean(x)) * 100, digits = 2),
+                  "mean" = round(mean(x), digits = 0),
+                  "sd" = round(sd(x), digits = 0)
+                )
+                return(d1) # nolint
+              }
+            ))
+            print("After LOESS normalization")
+            dl2 <- as.data.frame(magrittr::set_rownames(
+              setNames(
+                as.data.frame(fit[["norm"]]),
+                mft[iter, ][[col_nm]]
+              ),
+              mpx[order(mpx[[col_order]]), ][[col_nm]]
+            ))
+            dl2[is.na(dl2)] <- 0
+            dl2[dl2 < 0] <- 0
+            return(dl2) # nolint
+          }
+        )
+      )
+    }
+    d1 <- list(
+      "data" = d1,
+      "meta" = mpx,
+      "anno" = mft,
+      "norm.method" = "LOESS"
     )
   }
   return(d1)
