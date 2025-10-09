@@ -390,6 +390,7 @@ ms_plot_lipidnet <- function( # nolint
   comp1 = NULL,
   comp_sat = NULL
 ) {
+  ## Load nodes
   # Retrieve network information from database
   net_nodes <- DBI::dbGetQuery(
     db1, # nolint

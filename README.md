@@ -1,4 +1,4 @@
-# COMb v1.03 (20251003)
+# COMb v1.04 (20251009)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -70,6 +70,13 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 1.04
+    * Added internal standard normalization to
+    ms_data_norm().
+    * Updated ms_stat_crich() function to accept additional parameters for group and column selection.
+    * Fixed error in ms_dim_rd() related to duplicate row names.
+    * Added ms_data_check_pres() function to calculate the number of samples where a compound is present.
+    * Revised ms_data_check() function.
 * 1.03
     * Revised LOESS normalization to include MA-based correction
 * 1.02

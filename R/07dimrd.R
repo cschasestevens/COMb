@@ -52,8 +52,11 @@ ms_dim_rd <- function( # nolint
   md1 <- md
   if(data_scale == FALSE) { # nolint
     dimr <- list(
-      "input" = mat1,
-      "meta" = md
+      "input" = d1,
+      "meta" = md1
+    )
+    dimr[["input"]] <- magrittr::set_rownames(
+      dimr[["input"]], md1[[sid]]
     )
   }
   if(data_scale == TRUE) { # nolint
@@ -62,6 +65,9 @@ ms_dim_rd <- function( # nolint
     dimr <- list(
       "input" = d1,
       "meta" = md1
+    )
+    dimr[["input"]] <- magrittr::set_rownames(
+      dimr[["input"]], md1[[sid]]
     )
     dimr[["imputed"]] <- dimr[["input"]]
     ### replace NA with 0

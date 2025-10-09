@@ -63,119 +63,138 @@ ggplot2::ggplot(data = fit) +
     color = "blue"
   )
 
-
 #' Data Transformation, Scaling and Quality Check
 #'
 #' Performs data imputation, log2-transformation, scaling, and
 #' quality checks on an untargeted dataset.
 #'
-#' @param ld Data list generated from ms_input().
-#' @param cl_var Variable for annotating sample correlation heatmap.
-#' @param samp_id Variable containing sample IDs.
-#' @param sc_d Transform and scale data?
+#' @param dat A data matrix containing compounds as rownames and sample IDs
+#' as column names.
+#' @param md A data frame containing metadata accompanying the data matrix.
+#' @param md_var Grouping variable for data checks; this is generally
+#' a variable containing the group IDs for each sample.
+#' @param sid Sample ID variable.
 #' @param sc_meth Data scaling method (performed after log2 transformation);
-#' Currently available methods are "Median" or "Pareto" (default).
-#' @param hm_w Correlation heatmap width.
-#' @param hm_h Correlation heatmap height.
+#' Either "Median" or "Pareto" (default).
+#' @param dimtype Dimension reduction to calculate for scaled data; either "PCA"
+#' or "UMAP" (default).
+#' @param plab Should plot labels be shown on the loadings plot?
+#' @param hw Correlation heatmap width.
+#' @param hh Correlation heatmap height.
+#' @param fsr Heatmap row names fontsize.
+#' @param fsc Heatmap column names fontsize.
+#' @param trans Transpose input data?
 #' @return List containing formatted input data and metadata
 #' for downstream analysis.
 #' @examples
 #'
-#' # ms_data_check(d)
+#' # ms_data_check(d, md)
 #'
 #' @import dplyr
-#' @import ggplot2
+#' @import reshape2
 #' @import magrittr
-#' @import circlize
 #' @import ComplexHeatmap
+#' @import circlize
+#' @import ggplot2
+#' @import grid
 #' @import ggpubr
+#'
 #' @export
 ms_data_check <- function(
-  ld,
-  cl_var,
-  samp_id,
-  sc_d = TRUE,
+  dat,
+  md,
+  md_var = "Group",
+  sid = "Label",
   sc_meth = "Pareto",
-  hm_w = 20,
-  hm_h = 20
+  dimtype = "UMAP",
+  plab = TRUE,
+  hw = 20,
+  hh = 20,
+  fsr = 8,
+  fsc = 8,
+  trans = FALSE
 ) {
-  # input data from ms_input()
-  ld1 <- ld
-  if(sc_d == FALSE) { # nolint
-    ld1[["data.scale"]] <- ld1[["data"]]
+  # input data and metadata
+  ld1 <- dat
+  md1 <- md
+  mdv <- md_var
+  ## Input data
+  dimr <- list(
+    "input" = ld1,
+    "meta" = md1
+  )
+  dimr[["imputed"]] <- dimr[["input"]]
+  ### replace NA with 0
+  dimr[["imputed"]][is.na(dimr[["imputed"]])] <- 0
+  ### remove missing compounds
+  if(trans == FALSE) { # nolint
+    dimr[["imputed"]] <- dimr[["imputed"]][colSums(dimr[["imputed"]]) > 0]
   }
-  if(sc_d == TRUE) { # nolint
-    # data imputation
-    ## replace zeroes or NA with 1/10th of
-    ## the lowest non-zero value present
-    ld1[["imputed"]] <- ld1[["data"]]
-    ld1[["imputed"]] <- setNames(
-      as.data.frame(
-        lapply(
-          seq.int(1, ncol(ld1[["imputed"]]), 1),
-          function(x) {
-            ld1[["imputed"]][[x]][is.na(ld1[["imputed"]][[x]])] <- 0
-            d1 <- ld1[["imputed"]][[x]]
-            d1 <- ifelse(
-              d1 == 0,
-              round(0.1 * min(d1[d1 > 0]), digits = 0),
-              d1
-            )
-            return(d1) # nolint
-          }
+  if(trans == TRUE) { # nolint
+    dimr[["imputed"]] <- dimr[["imputed"]][rowSums(dimr[["imputed"]]) > 0, ]
+  }
+  ### replace zeroes with 1/10th of the lowest non-zero
+  ### value per compound
+  dimr[["imputed"]] <- magrittr::set_rownames(dplyr::bind_cols(
+    lapply(
+      seq.int(1, ncol(dimr[["imputed"]]), 1),
+      function(x) {
+        d1 <- dimr[["imputed"]][[x]]
+        d1 <- ifelse(
+          d1 == 0,
+          0.1 * min(d1[d1 > 0]),
+          d1
         )
-      ),
-      c(names(ld1[["imputed"]]))
+        d1 <- setNames(as.data.frame(d1), names(dimr[["imputed"]])[[x]])
+        return(d1) # nolint
+      }
     )
-    # Log2-transformation
-    ld1[["data.log2"]] <- setNames(
-      as.data.frame(
-        lapply(
-          seq.int(
-            1,
-            ncol(ld1[["imputed"]]),
-            1
-          ),
-          function(x) {
-            log2(ld1[["imputed"]][[x]])
-          }
-        )
-      ),
-      c(names(ld1[["imputed"]]))
-    )
-    # Median centering
-    if(sc_meth == "Median") { # nolint
-      ld1[["data.scale"]] <- setNames(
-        dplyr::bind_rows(
-          lapply(
-            seq.int(1, nrow(ld1[["data.log2"]]), 1),
-            function(x) {
-              d <- as.data.frame(t(ld1[["data.log2"]]))[[x]]
-              d <- as.data.frame(t(round(d - median(d), digits = 2)))
-              return(d) # nolint
-            }
-          )
-        ),
-        names(ld1[["data.log2"]])
+  ), rownames(dimr[["imputed"]]))
+  ## Log2-transformation
+  dimr[["data.log2"]] <- magrittr::set_rownames(setNames(
+    as.data.frame(
+      lapply(
+        seq.int(1, ncol(dimr[["imputed"]]), 1),
+        function(x) {
+          log2(dimr[["imputed"]][[x]])
+        }
       )
-    }
-    # Pareto scaling
-    if(sc_meth == "Pareto") { # nolint
-      ld1[["data.scale"]] <- setNames(
-        as.data.frame(
+    ),
+    c(names(dimr[["imputed"]]))
+  ), row.names(dimr[["imputed"]]))
+  ## Median centering
+  if(sc_meth == "Median") { # nolint
+    dimr[["data.scale"]] <- setNames(
+      dplyr::bind_rows(
+        lapply(
+          seq.int(1, nrow(dimr[["data.log2"]]), 1),
+          function(x) {
+            d <- as.data.frame(t(dimr[["data.log2"]]))[[x]]
+            d <- as.data.frame(t(round(d - median(d), digits = 2)))
+            return(d) # nolint
+          }
+        )
+      ),
+      names(dimr[["data.log2"]])
+    )
+  }
+  ## Pareto scaling
+  if(sc_meth == "Pareto") { # nolint
+    dimr[["data.scale"]] <- setNames(
+      as.data.frame(
+        apply(
           apply(
-            apply(
-              as.matrix(ld1[["data.log2"]]),
-              2,
-              function(x) x - mean(x)
-            ),
+            as.matrix(dimr[["data.log2"]]),
             2,
-            function(y) round(y / sqrt(sd(y)), digits = 2)
-          )
-        ),
-        c(names(ld1[["data.log2"]]))
-      )
-    }
+            function(x) x - mean(x)
+          ),
+          2,
+          function(y) round(y / sqrt(sd(y)), digits = 2)
+        )
+      ),
+      c(names(dimr[["data.log2"]]))
+    )
+    head(dimr[["data.scale"]])
   }
   # Data distributions
   dst <- function(df, n1) {
@@ -201,21 +220,28 @@ ms_data_check <- function(
       )
     return(p) # nolint
   }
-
-  ## Sample correlation heatmap
-  # Input
-  h1 <- ld1[["data.scale"]]
+  ## Combined distribution plot
+  dimr[["pdist"]] <- ggpubr::ggarrange(
+    dst(dimr[["input"]], "Input"),
+    dst(dimr[["data.log2"]], "Log2"),
+    dst(dimr[["data.scale"]], paste(sc_meth, "Scaled", sep = " ")),
+    nrow = 1,
+    ncol = 3
+  )
+  # Sample correlation heatmap
+  ## Input data
+  h2 <- dimr[["data.scale"]]
   h1md <- data.frame(
-    "Group" = as.factor(ld1[["meta"]][[cl_var]]),
-    "ID" = ld1[["meta"]][[samp_id]]
+    "Group" = as.factor(sort(dimr[["meta"]][[mdv]])),
+    "ID" = dimr[["meta"]][[sid]]
   )
   h2 <- t(
     magrittr::set_rownames(
-      as.matrix(h1),
+      as.matrix(h2),
       h1md[["ID"]]
     )
   )
-  ld1[["data.samp.corr"]] <- round(
+  dimr[["heatsampin"]] <- round(
     cor(
       h2,
       method = "spearman"
@@ -225,7 +251,7 @@ ms_data_check <- function(
   # Heatmap colors
   fun_hm_col <- circlize::colorRamp2(
     c(-1, 0, 0.5, 1),
-    colors = col_grad()[c(1, 3, 6, 12)] # nolint
+    colors = col_grad(scm = 3) # nolint
   )
   set.seed(1234)
   fun_hm_bar <- list(
@@ -244,8 +270,8 @@ ms_data_check <- function(
     )
   )
   # Plot
-  h_out <- ComplexHeatmap::Heatmap(
-    ld1[["data.samp.corr"]],
+  dimr[["heatsamp"]] <- ComplexHeatmap::Heatmap(
+    dimr[["heatsampin"]],
     col = fun_hm_col,
     name = "Correlation",
     top_annotation = hm_anno_list[[1]],
@@ -253,37 +279,23 @@ ms_data_check <- function(
     show_row_names = TRUE,
     cluster_columns = TRUE,
     cluster_rows = TRUE,
-    heatmap_width = ggplot2::unit(hm_w, "cm"),
-    heatmap_height = ggplot2::unit(hm_h, "cm"),
-    column_title = "Sample Correlation"
+    heatmap_width = ggplot2::unit(hw, "cm"),
+    heatmap_height = ggplot2::unit(hh, "cm"),
+    column_title = "Sample Correlation",
+    row_names_gp = grid::gpar(fontsize = fsr),
+    column_names_gp = grid::gpar(fontsize = fsc)
   )
-  if(sc_d == FALSE) { # nolint
-    lp1 <- list(
-      "plot.dist" = dst(
-        ld1[["data.scale"]],
-        paste(sc_meth, "Scaled", sep = " ")
-      ),
-      "plot.cor" = h_out
-    )
-  }
-  if(sc_d == TRUE) { # nolint
-    lp1 <- list(
-      "plot.dist" = ggpubr::ggarrange(
-        dst(ld1[["data"]], "Input"),
-        dst(ld1[["data.log2"]], "Log2"),
-        dst(ld1[["data.scale"]], paste(sc_meth, "Scaled", sep = " ")),
-        nrow = 1,
-        ncol = 3
-      ),
-      "plot.cor" = h_out
-    )
-  }
-  return(
-    list(
-      "data" = ld1,
-      "plots" = lp1
-    )
+  # Dimension reduction plot
+  dimr[["dimr"]] <- ms_dim_rd(
+    mat1 = dimr[["data.scale"]],
+    md = dimr[["meta"]],
+    md_var = mdv,
+    sid = sid,
+    dim_type = dimtype,
+    p_lab = plab,
+    data_scale = FALSE
   )
+  return(dimr)
 }
 
 #' Data Transformation, Scaling and Quality Check (Targeted)
@@ -768,4 +780,133 @@ ms_blank_sub <- function(
     "flag" = lfilt
   )
   return(out) # nolint
+}
+
+#' Check Compound Presence Per Group
+#'
+#' Checks compound presence per treatment group for the selected dataset
+#' and removes compounds that are not present in at least 50% of samples
+#' in one group.
+#'
+#' @param dat A list generated by COMb functions containing compounds
+#' intensities, metadata, and annotation information.
+#' @param hw Presence/absence heatmap width.
+#' @param hh Presence/absence heatmap height.
+#' @param fsc Heatmap column names fontsize.
+#' @param trans Transpose input data?
+#' @return List containing formatted input data and metadata
+#' for downstream analysis.
+#' @examples
+#'
+#' # ms_data_check_pres(
+#' #   dat = d_raw[[1]]
+#' # )
+#'
+#' @import dplyr
+#' @import reshape2
+#' @import magrittr
+#' @import ComplexHeatmap
+#' @import circlize
+#' @import grid
+#'
+#' @export
+ms_data_check_pres <- function(
+  dat,
+  md_var = "Group",
+  md_anno = "Label",
+  hw = 20,
+  hh = 20,
+  fsc = 8,
+  trans = TRUE
+) {
+  # input data and metadata
+  ld1 <- dat[["data"]]
+  md1 <- dat[["meta"]]
+  md2 <- dat[["anno"]]
+  mdv <- md_var
+  # Check presence/absence for each sample group
+  if(trans == FALSE) {dchk <- ld1} # nolint
+  if(trans == TRUE) { # nolint
+    dchk <- setNames(as.data.frame(t(ld1)), rownames(ld1))
+  }
+  dchk2 <- dplyr::bind_rows(lapply(
+    seq.int(1, ncol(dchk), 1),
+    function(x) {
+      dcnt <- setNames(aggregate(
+        dchk[[x]],
+        list(md1[[mdv]]),
+        function(y) {
+          d1 <- y > 0 & !is.na(y)
+          d1 <- length(d1[d1 == TRUE])
+        }
+      ), c("Group", "detected"))
+      dtot <- setNames(aggregate(
+        dchk[[x]],
+        list(md1[[mdv]]),
+        function(y) length(y)
+      ), c("Group", "total"))
+      dout <- dplyr::left_join(dcnt, dtot, by = c("Group"))
+      dout[["prop"]] <- round(
+        dout[["detected"]] / dout[["total"]],
+        digits = 3
+      )
+      dout[["Name"]] <- names(dchk)[[x]]
+      dout <- dplyr::select(dout, "Name", everything()) # nolint
+      return(dout) # nolint
+    }
+  ))
+  dchk2 <- reshape2::dcast(
+    dchk2,
+    Name ~ Group,
+    value.var = "prop"
+  )
+  ### Presence/absence matrix
+  dchk2 <- magrittr::set_rownames(
+    dchk2, make.names(md2[[md_anno]], unique = TRUE)
+  )[-1]
+  # Presence/absence heatmap
+  h1 <- as.matrix(dchk2)
+  # Heatmap colors
+  fun_hm_col <- circlize::colorRamp2(
+    c(0, 0.5, 1),
+    colors = col_grad(scm = 4) # nolint
+  )
+  h_out <- ComplexHeatmap::Heatmap(
+    h1,
+    col = fun_hm_col,
+    name = "Proportion",
+    show_column_names = TRUE,
+    show_row_names = FALSE,
+    cluster_columns = TRUE,
+    cluster_rows = TRUE,
+    heatmap_width = ggplot2::unit(hw, "cm"),
+    heatmap_height = ggplot2::unit(hh, "cm"),
+    column_title = paste("Presence/absence"),
+    column_names_gp = grid::gpar(fontsize = fsc)
+  )
+  # Imputed data sets for dimension reduction
+  ## Input data
+  dimr <- list(
+    "data" = dchk,
+    "meta" = md1,
+    "anno" = md2,
+    "heatpres" = h_out,
+    "heatpresin" = dchk2
+  )
+  ### replace NA with 0
+  dimr[["data"]][is.na(dimr[["data"]])] <- 0
+  ### remove missing compounds
+  drem <- unlist(apply(dchk2, 1, function(y) max(y) > 0.5))
+  if(trans == FALSE) { # nolint
+    dimr[["data"]] <- dimr[["data"]][, drem]
+  }
+  if(trans == TRUE) { # nolint
+    dimr[["data"]] <- dimr[["data"]][, drem]
+    dimr[["anno"]] <- dimr[["anno"]][drem, ]
+    print(paste(
+      "Removed ", ncol(dchk) - ncol(dimr[["data"]]),
+      " low abundance compounds.", sep = ""
+    ))
+  }
+  return(dimr)
 }

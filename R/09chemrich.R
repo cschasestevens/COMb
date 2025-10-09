@@ -24,7 +24,7 @@
 ms_stat_crich <- function(
   d_stat,
   d_ref,
-  cl_name
+  cl_name = "label.saturation"
 ) {
   # load data
   d1 <- d_stat
@@ -33,20 +33,20 @@ ms_stat_crich <- function(
   # Assign classes from reference
   d3 <- dplyr::left_join(
     d1,
-    d2[, c("Name", cl1, "label")],
+    d2[, c("Name", cl1)],
     by = "Name"
   )
   # Run KS test for each comparison and create separate results df
   cmp1 <- unique(d3[["Comparison.fc"]])
   cr_run <- setNames(
     parallel::mclapply(
-      mc.cores = ceiling(parallel::detectCores() * 0.75),
+      mc.cores = ceiling(parallel::detectCores() / 2),
       seq.int(1, length(cmp1), 1),
       function(x) {
         # Extract unique Classes
         cr1 <- unique(d3[[cl1]])
         ## Remove from list if unknown
-        cr1 <- cr1[cr1 != "Unknown"]
+        cr1 <- cr1[cr1 != "Unknown" & !is.na(cr1)]
         # Run KS test for each class
         cr2 <- setNames(
           lapply(
@@ -70,7 +70,7 @@ ms_stat_crich <- function(
                 "p.value" = ksdf[["p.value"]]
               ), c("Comparison.ID", "Comparison", "Cluster.ID", cl1, "p.value"))
               ksdf2[is.nan(ksdf2[["p.value"]]), c("p.value")] <- 1
-              return(ksdf2)
+              return(ksdf2) # nolint
             }
           ),
           cr1
@@ -201,18 +201,13 @@ ms_stat_crich <- function(
             levels = c(cr3[[cl1]])
           )
         }
-        cr3 <- dplyr::left_join(
-          cr3,
-          unique(d3[, c(cl1, "label")]),
-          by = cl1
-        )
-        return(cr3)
+        return(cr3) # nolint
       }
     ),
     cmp1
   )
   cr_out <- dplyr::bind_rows(cr_run)
-  return(cr_out)
+  return(cr_out) # nolint
 }
 
 #' Plot ChemRICH Results
@@ -305,5 +300,5 @@ ms_plot_crich <- function(
       name = "Cluster Size",
       max_size = 16
     )
-  return(cr_plot)
+  return(cr_plot) # nolint
 }

@@ -5,7 +5,8 @@
 #' Planned methods include iSTD, SERRF, and LOESS.
 #'
 #' @param ld1 List data object generated from ms_input().
-#' @param mtd Normalization method (either "none", "tic", or "LOESS").
+#' @param mtd Normalization method (either "none", "tic",
+#' "iSTD", or "LOESS").
 #' @param bl_rem Should blank samples be removed from the input data?
 #' @param bl_col If bl_rem is TRUE, provides the column name including
 #' sample groups or identities, including blanks.
@@ -20,6 +21,7 @@
 #' @param spn LOESS span.
 #' @param qc_nm QC sample name within the group column (e.g. "Pool").
 #' @param msg Show group RSDs in the console output.
+#' @param trans Should input data be transposed prior to normalization?
 #' @return A list containing normalized compound intensities and metadata.
 #' @examples
 #'
@@ -31,7 +33,7 @@
 #' @export
 ms_data_norm <- function( # nolint
   ld1,
-  mtd = "LOESS",
+  mtd = "iSTD",
   bl_rem = TRUE,
   bl_col = "File type",
   bl_nm = "Blank",
@@ -39,17 +41,29 @@ ms_data_norm <- function( # nolint
   col_order = "Order",
   col_grp = "Group",
   col_nm = "Label",
-  qc_nm = "Pool",
-  msg = FALSE
+  qc_nm = "QC",
+  msg = FALSE,
+  trans = TRUE
 ) {
   # Load objects
-  d <- ld1[["data"]]
   mpx <- ld1[["meta"]]
   mft <- ld1[["anno"]]
-  # Remove blanks
-  if (bl_rem == TRUE && mtd == "LOESS") {
-    mpx <- mpx[mpx[[bl_col]] != bl_nm, ]
-    d <- d[names(d) %in% mpx[[col_id]]]
+  if (trans == TRUE) {
+    d <- ld1[["data"]]
+    d <- as.data.frame(t(d))
+    # Remove blanks
+    if (bl_rem == TRUE) {
+      mpx <- mpx[mpx[[bl_col]] != bl_nm, ]
+      d <- d[names(d) %in% mpx[[col_id]]]
+    }
+  }
+  if (trans == FALSE) {
+    d <- ld1[["data"]]
+    # Remove blanks
+    if (bl_rem == TRUE) {
+      mpx <- mpx[mpx[[bl_col]] != bl_nm, ]
+      d <- d[names(d) %in% mpx[[col_id]]]
+    }
   }
   # No normalization
   if(mtd == "none") { # nolint
@@ -769,6 +783,293 @@ ms_data_norm <- function( # nolint
       "meta" = mpx[order(mpx[["Order"]]), ],
       "anno" = mft,
       "norm.method" = "LOESS"
+    )
+  }
+  ## Internal Standard Normalization (must have data containing iSTDs)
+  if(mtd == "iSTD") { # nolint
+    print("Performing iSTD normalization...")
+    if (Sys.info()[["sysname"]] != "Windows") {
+      d <- as.data.frame(d)
+      # Data imputation (if not already completed)
+      d <- setNames(
+        as.data.frame(
+          lapply(
+            seq.int(1, ncol(d), 1),
+            function(x) {
+              d[[x]][is.na(d[[x]])] <- 0
+              d1 <- d[[x]]
+              d1 <- ifelse(
+                d1 == 0,
+                round(0.1 * min(d1[d1 > 0]), digits = 0),
+                d1
+              )
+              return(d1) # nolint
+            }
+          )
+        ),
+        c(names(d))
+      )
+      # Set row names as features and calculate iTIC per sample
+      d <- magrittr::set_rownames(
+        d, make.names(mft[[col_nm]], unique = TRUE)
+      )
+      dstd <- d[grepl("iSTD", rownames(d)), ]
+      dtic <- data.frame(
+        "iTIC.prenorm" = unlist(
+          lapply(
+            seq.int(1, ncol(dstd), 1),
+            function(x) sum(dstd[[x]])
+          )
+        )
+      )
+      ## Calculate Group RSD pre- and post-normalization
+      mpx <- dplyr::left_join(
+        mpx,
+        data.frame(
+          "Group" = aggregate(
+            t(d[1, ]),
+            list(mpx[[col_grp]]),
+            function(z) (sd(z) / mean(z)) * 100
+          )[[1]],
+          "RSD.median.pre" = round(unlist(lapply(
+            seq.int(1, length(unique(mpx[[col_grp]])), 1),
+            function(a) {
+              median(
+                as.data.frame(t(dplyr::bind_cols(
+                  parallel::mclapply(
+                    mc.cores = ceiling(parallel::detectCores() / 2),
+                    seq.int(1, ncol(d), 1),
+                    function(y) {
+                      setNames(as.data.frame(aggregate(
+                        t(d[y, ]),
+                        list(mpx[[col_grp]]),
+                        function(z) (sd(z) / mean(z)) * 100
+                      )[[2]]), paste("X", y, sep = ""))
+                    }
+                  )
+                )))[[a]]
+              )
+            }
+          )), digits = 2)
+        ),
+        by = "Group"
+      )
+      dtic <- dplyr::select(
+        dplyr::left_join(
+          data.frame("Group" = mpx[[col_grp]], dtic),
+          setNames(
+            aggregate(
+              dtic[["iTIC.prenorm"]],
+              list(
+                mpx[[col_grp]]
+              ),
+              function(x) mean(x)
+            ),
+            c("Group", "iTIC.avg.group")
+          ),
+          by = "Group"
+        ),
+        c("iTIC.avg.group", dplyr::everything())
+      )
+      ## Calculate iTIC average
+      itic_avg <- mean(dtic[["iTIC.prenorm"]])
+      ## Normalize each compound to iSTD average
+      d2 <- setNames(as.data.frame(lapply(
+        seq.int(1, ncol(d), 1),
+        function(j) {
+          d2 <- (d[[j]] / dtic[["iTIC.prenorm"]][[j]]) *
+            itic_avg
+          return(d2) # nolint
+        }
+      )), names(d))
+      ## Calculate Group RSD pre- and post-normalization
+      mpx <- dplyr::left_join(
+        mpx,
+        data.frame(
+          "Group" = aggregate(
+            t(d2[1, ]),
+            list(mpx[[col_grp]]),
+            function(z) (sd(z) / mean(z)) * 100
+          )[[1]],
+          "RSD.median.post" = round(unlist(lapply(
+            seq.int(1, length(unique(mpx[[col_grp]])), 1),
+            function(a) {
+              median(
+                as.data.frame(t(dplyr::bind_cols(
+                  parallel::mclapply(
+                    mc.cores = ceiling(parallel::detectCores() / 2),
+                    seq.int(1, ncol(d2), 1),
+                    function(y) {
+                      setNames(as.data.frame(aggregate(
+                        t(d2[y, ]),
+                        list(mpx[[col_grp]]),
+                        function(z) (sd(z) / mean(z)) * 100
+                      )[[2]]), paste("X", y, sep = ""))
+                    }
+                  )
+                )))[[a]]
+              )
+            }
+          )), digits = 2)
+        ),
+        by = "Group"
+      )
+      mpx[["iTIC.prenorm"]] <- dtic[["iTIC.prenorm"]]
+      # Calculate iTIC post-normalization
+      mpx[["iTIC.postnorm"]] <- unlist(lapply(
+        seq.int(1, ncol(d), 1),
+        function(x) {
+          qc1 <- d2[grepl("iSTD", rownames(d)), ]
+          qc1 <- sum(qc1[[x]])
+        }
+      ))
+      mpx[["ID"]] <- seq.int(1, nrow(mpx), 1)
+    }
+    if (Sys.info()[["sysname"]] == "Windows") {
+      d <- as.data.frame(d)
+      # Data imputation (if not already completed)
+      d <- setNames(
+        as.data.frame(
+          lapply(
+            seq.int(1, ncol(d), 1),
+            function(x) {
+              d[[x]][is.na(d[[x]])] <- 0
+              d1 <- d[[x]]
+              d1 <- ifelse(
+                d1 == 0,
+                round(0.1 * min(d1[d1 > 0]), digits = 0),
+                d1
+              )
+              return(d1) # nolint
+            }
+          )
+        ),
+        c(names(d))
+      )
+      # Set row names as features and calculate iTIC per sample
+      d <- magrittr::set_rownames(
+        d, make.names(mft[[col_nm]], unique = TRUE)
+      )
+      dstd <- d[grepl("iSTD", rownames(d)), ]
+      dtic <- data.frame(
+        "iTIC.prenorm" = unlist(
+          lapply(
+            seq.int(1, ncol(dstd), 1),
+            function(x) sum(dstd[[x]])
+          )
+        )
+      )
+      ## Calculate Group RSD pre- and post-normalization
+      mpx <- dplyr::left_join(
+        mpx,
+        data.frame(
+          "Group" = aggregate(
+            t(d[1, ]),
+            list(mpx[[col_grp]]),
+            function(z) (sd(z) / mean(z)) * 100
+          )[[1]],
+          "RSD.median.pre" = round(unlist(lapply(
+            seq.int(1, length(unique(mpx[[col_grp]])), 1),
+            function(a) {
+              median(
+                as.data.frame(t(dplyr::bind_cols(
+                  lapply(
+                    seq.int(1, ncol(d), 1),
+                    function(y) {
+                      setNames(as.data.frame(aggregate(
+                        t(d[y, ]),
+                        list(mpx[[col_grp]]),
+                        function(z) (sd(z) / mean(z)) * 100
+                      )[[2]]), paste("X", y, sep = ""))
+                    }
+                  )
+                )))[[a]]
+              )
+            }
+          )), digits = 2)
+        ),
+        by = "Group"
+      )
+      dtic <- dplyr::select(
+        dplyr::left_join(
+          data.frame("Group" = mpx[[col_grp]], dtic),
+          setNames(
+            aggregate(
+              dtic[["iTIC.prenorm"]],
+              list(
+                mpx[[col_grp]]
+              ),
+              function(x) mean(x)
+            ),
+            c("Group", "iTIC.avg.group")
+          ),
+          by = "Group"
+        ),
+        c("iTIC.avg.group", dplyr::everything())
+      )
+      ## Calculate iTIC average
+      itic_avg <- mean(dtic[["iTIC.prenorm"]])
+      ## Normalize each compound to iSTD average
+      d2 <- setNames(as.data.frame(lapply(
+        seq.int(1, ncol(d), 1),
+        function(j) {
+          d2 <- (d[[j]] / dtic[["iTIC.prenorm"]][[j]]) *
+            itic_avg
+          return(d2) # nolint
+        }
+      )), names(d))
+      ## Calculate Group RSD pre- and post-normalization
+      mpx <- dplyr::left_join(
+        mpx,
+        data.frame(
+          "Group" = aggregate(
+            t(d2[1, ]),
+            list(mpx[[col_grp]]),
+            function(z) (sd(z) / mean(z)) * 100
+          )[[1]],
+          "RSD.median.post" = round(unlist(lapply(
+            seq.int(1, length(unique(mpx[[col_grp]])), 1),
+            function(a) {
+              median(
+                as.data.frame(t(dplyr::bind_cols(
+                  lapply(
+                    seq.int(1, ncol(d2), 1),
+                    function(y) {
+                      setNames(as.data.frame(aggregate(
+                        t(d2[y, ]),
+                        list(mpx[[col_grp]]),
+                        function(z) (sd(z) / mean(z)) * 100
+                      )[[2]]), paste("X", y, sep = ""))
+                    }
+                  )
+                )))[[a]]
+              )
+            }
+          )), digits = 2)
+        ),
+        by = "Group"
+      )
+      mpx[["iTIC.prenorm"]] <- dtic[["iTIC.prenorm"]]
+      # Calculate iTIC post-normalization
+      mpx[["iTIC.postnorm"]] <- unlist(lapply(
+        seq.int(1, ncol(d), 1),
+        function(x) {
+          qc1 <- d2[grepl("iSTD", rownames(d)), ]
+          qc1 <- sum(qc1[[x]])
+        }
+      ))
+      mpx[["ID"]] <- seq.int(1, nrow(mpx), 1)
+    }
+    d1 <- list(
+      "data" = magrittr::set_rownames(
+        setNames(
+          as.data.frame(t(d2)), mft[[col_nm]]
+        ),
+        mpx[[col_id]]
+      ),
+      "meta" = mpx,
+      "anno" = mft,
+      "norm.method" = "iSTD"
     )
   }
   return(d1)
