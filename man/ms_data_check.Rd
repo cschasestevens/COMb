@@ -5,30 +5,48 @@
 \title{Data Transformation, Scaling and Quality Check}
 \usage{
 ms_data_check(
-  ld,
-  cl_var,
-  samp_id,
-  sc_d = TRUE,
+  dat,
+  md,
+  md_var = "Group",
+  sid = "Label",
   sc_meth = "Pareto",
-  hm_w = 20,
-  hm_h = 20
+  dimtype = "UMAP",
+  plab = TRUE,
+  hw = 20,
+  hh = 20,
+  fsr = 8,
+  fsc = 8,
+  trans = FALSE
 )
 }
 \arguments{
-\item{ld}{Data list generated from ms_input().}
+\item{dat}{A data matrix containing compounds as rownames and sample IDs
+as column names.}
 
-\item{cl_var}{Variable for annotating sample correlation heatmap.}
+\item{md}{A data frame containing metadata accompanying the data matrix.}
 
-\item{samp_id}{Variable containing sample IDs.}
+\item{md_var}{Grouping variable for data checks; this is generally
+a variable containing the group IDs for each sample.}
 
-\item{sc_d}{Transform and scale data?}
+\item{sid}{Sample ID variable.}
 
 \item{sc_meth}{Data scaling method (performed after log2 transformation);
-Currently available methods are "Median" or "Pareto" (default).}
+Either "Median" or "Pareto" (default).}
 
-\item{hm_w}{Correlation heatmap width.}
+\item{dimtype}{Dimension reduction to calculate for scaled data; either "PCA"
+or "UMAP" (default).}
 
-\item{hm_h}{Correlation heatmap height.}
+\item{plab}{Should plot labels be shown on the loadings plot?}
+
+\item{hw}{Correlation heatmap width.}
+
+\item{hh}{Correlation heatmap height.}
+
+\item{fsr}{Heatmap row names fontsize.}
+
+\item{fsc}{Heatmap column names fontsize.}
+
+\item{trans}{Transpose input data?}
 }
 \value{
 List containing formatted input data and metadata
@@ -40,6 +58,6 @@ quality checks on an untargeted dataset.
 }
 \examples{
 
-# ms_data_check(d)
+# ms_data_check(d, md)
 
 }

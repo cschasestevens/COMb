@@ -20,7 +20,8 @@
 #' @param lipid_fc (Lipidomics Only) Logical indicating
 #' whether related lipid class fold changes should be calculated.
 #' If TRUE, calculates lipid class averages and calculates related class
-#' ratios prior to treatment group comparisons.
+#' ratios prior to treatment group comparisons. Class comparisons are
+#' calculated based on the HiVE package.
 #' @param comp_grp Only applicable if lipid_fc is TRUE; Should treatment
 #' group fold changes be calculated? If FALSE, returns lipid class ratios
 #' without aggregating and comparing by treatment group.
@@ -374,6 +375,8 @@ ms_stat_fc <- function( # nolint
   }
   # Calculate related lipid class fold changes for each group
   if(fc_class == FALSE && lipid_fc == TRUE) { # nolint
+    HiVE::nedge
+    nedge
     # aggregate by class then pathway ratio
     d1 <- mat1
     an1 <- an
@@ -384,7 +387,7 @@ ms_stat_fc <- function( # nolint
     )
     d1 <- setNames(as.data.frame(t(d1[, 2:ncol(d1)])), d1[[1]])
     md1 <- md
-    ## pathway ratios
+    ## return pathway ratios from HiVE database
     rat1 <- DBI::dbGetQuery(
       db1, # nolint
       'select * from lipid_class_ratios' # nolint

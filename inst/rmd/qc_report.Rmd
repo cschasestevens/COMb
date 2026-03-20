@@ -1,0 +1,340 @@
+---
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+title: "QC Summary"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE 
+    theme: cerulean
+    css: "style.css" 
+editor options:
+  chunk_output_type: console
+params:
+  rep1: NA
+  data1: NA
+---
+```{r, echo=F, fig.align= "center", results=F, message=F, warning=F, eval=T}
+# Set default figure resolution and dimensions
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  dpi = 600,
+  fig.width = 7,
+  fig.height = 3
+)
+```
+```{r import, echo=F, results=F, message=F, warning=F}
+# Set parameters
+## in-line code
+rep2 <- params$rep1
+## summary data for code chunks
+data2 <- params$data1
+```
+#### **`r rep2$sn`**  
+#### Prepared by: `r rep2$sa`  
+
+### **Study Details**  
+Analysis Platform: **`r rep2$ap`**  
+Analysis Date: **`r rep2$ad`**  
+Study IDs and Modes: **`r rep2$sd`**  
+Sample and Feature Number: **`r rep2$sfn`**  
+Data Processing: **`r rep2$dp`**  
+Normalization Method: **`r rep2$mn`**  
+
+### **Report Summary**  
+The following report summarizes the quality control assessment for the dataset specified above.  
+The quality control procedure is performed according to the following steps:  
+1. Evaluate general dataset characteristics  
+2. Check compound/feature presence per group  
+3. Visualize normalized, transformed, and scaled data distributions  
+4. Sample dimension reduction and outlier detection  
+5. Determine signal intensity drift across the analytical run  
+6. Confirm correlation between related sample groups  
+7. Assess QC and experimental sample relative standard deviations  
+
+### 1. Evaluate general dataset characteristics
+The aggregated and individual sample numbers per group are summarized in the table below. Datasets containing class annotations and internal standards include additional tables listing the number of compounds annotated in each class and a list of each annotated internal standard in the dataset.
+```{r genchar01, echo=F, fig.align= "center", results=T, message=F, warning=F, eval=TRUE}
+# Summary of general dataset characteristics
+if (is.null(data2[["data summary"]][[4]])) {
+  data2[["data summary"]][[4]] <- "No class annotations provided..."
+}
+if (is.null(data2[["data summary"]][[5]])) {
+  data2[["data summary"]][[5]] <- "No internal standards specified..."
+}
+shiny::fluidRow(
+  shiny::column(
+    2,
+    # Sample summary
+    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+      kableExtra::kbl(
+        data2[["data summary"]][[2]],
+        align = "c",
+        caption = "Aggregated sample number"
+      ),
+      bootstrap_options = c("striped"),
+      full_width = FALSE
+    ), width = "150px", height = "200px"))
+  ),
+  shiny::column(
+    2,
+    # Sample numbers per group
+    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+      kableExtra::kbl(
+        data2[["data summary"]][[3]],
+        align = "c",
+        caption = "Samples per group"
+      ),
+      bootstrap_options = c("striped"),
+      full_width = FALSE
+    ), width = "150px", height = "200px"))
+  ),
+  shiny::column(
+    2,
+    # Sample numbers per group
+    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+      kableExtra::kbl(
+        data2[["data summary"]][[4]],
+        align = "c",
+        caption = "Annotations per class"
+      ),
+      bootstrap_options = c("striped"),
+      full_width = FALSE
+    ), width = "150px", height = "200px"))
+  ),
+  shiny::column(
+    2,
+    # Sample numbers per group
+    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+      kableExtra::kbl(
+        data2[["data summary"]][[5]],
+        align = "c",
+        caption = "Internal standard list"
+      ),
+      bootstrap_options = c("striped"),
+      full_width = FALSE
+    ), width = "150px", height = "200px"))
+  )
+)
+```
+
+### 2. Check compound/feature presence per group
+The proportion of samples within each group where an individual compound is detected is displayed in the following heatmaps. Data are split by batch and ionization mode, and the compound presence is determined by a peak height greater than zero in the original processed data without imputation or normalization.
+```{r pres01, echo=F, fig.width=3, fig.height=3, results=T, message=F, warning=F, eval=TRUE}
+# Save all heatmaps as tempfiles
+invisible(lapply(
+  seq.int(1, length(data2[["compound presence"]]), 1),
+  function(i) {
+    invisible(lapply(
+      seq.int(1, length(data2[["compound presence"]][[i]]), 1),
+      function(j) {
+        tp1 <- tempfile(
+          pattern = paste(
+            "heat01_",
+            names(data2[["compound presence"]])[[i]], "_",
+            names(data2[["compound presence"]][[i]])[[j]],
+            sep = ""
+          ),
+          fileext = ".png"
+        )
+        grDevices::png(
+          tp1,
+          width = 22,
+          height = 22,
+          units = "cm",
+          res = 700
+        )
+        invisible(print(data2[["compound presence"]][[i]][[j]]))
+        grDevices::dev.off()
+      }
+    ))
+  }
+))
+# Include in report
+knitr::include_graphics(
+  path = list.files(tempdir(), full.names = TRUE)[
+    grepl("heat01", list.files(tempdir()))
+  ]
+)
+```
+
+### 3. Visualize normalized, transformed, and scaled data distributions
+The Log2-transformed and Pareto-scaled data distributions are included for each batch and ionization mode below. Solid lines represent the normalized data distribution relative to the imputed data distribution denoted by dotted lines.
+```{r dist01, echo=F, fig.width=3, fig.height=2, results=T, message=F, warning=F, eval=TRUE}
+# Visualize data distribution for each batch
+invisible(lapply(
+  seq.int(1, length(data2[["data distribution"]]), 1),
+  function(i) {
+    tp1 <- tempfile(
+      pattern = paste(
+        "dist01_",
+        names(data2[["data distribution"]])[[i]],
+        sep = ""
+      ),
+      fileext = ".png"
+    )
+    ggplot2::ggsave(
+      tp1,
+      data2[["data distribution"]][[i]],
+      width = 30,
+      height = 20,
+      units = "cm",
+      dpi = 600
+    )
+  }
+))
+if (length(names(data2[["data distribution"]]) > 1)) {
+  print("Multiple batches in report; Plot order from left-right:")
+  print(names(data2[["data distribution"]]))
+}
+# Include in report
+knitr::include_graphics(
+  path = list.files(tempdir(), full.names = TRUE)[
+    grepl("dist01", list.files(tempdir()))
+  ]
+)
+```
+
+### 4. Sample dimension reduction and outlier detection
+Principal Components Analysis was conducted for each batch/mode for both the imputed and normalized data. Outlier detection may be included in the specified dataset and is shown as a separate figure panel. For datasets where outlier detection is performed, samples with an intensity greater than +/- 3 standard deviations from the mean intensity of the sample group are flagged as outliers.
+```{r dimr01, echo=F, fig.align= "center", fig.width=12, fig.height=8, results=T, message=F, warning=F, eval=TRUE}
+# Visualize dimension reduction for each batch
+invisible(lapply(
+  seq.int(1, length(data2[["dimension reduction"]]), 1),
+  function(i) {
+    tp1 <- tempfile(
+      pattern = paste(
+        "dimr01_",
+        names(data2[["dimension reduction"]])[[i]],
+        sep = ""
+      ),
+      fileext = ".png"
+    )
+    ggplot2::ggsave(
+      tp1,
+      data2[["dimension reduction"]][[i]],
+      width = 48,
+      height = 32,
+      units = "cm",
+      dpi = 600
+    )
+  }
+))
+if (length(names(data2[["dimension reduction"]]) > 1)) {
+  print("Multiple batches in report; Plot order from top-bottom:")
+  print(names(data2[["dimension reduction"]]))
+}
+# Include in report
+knitr::include_graphics(
+  path = list.files(tempdir(), full.names = TRUE)[
+    grepl("dimr01", list.files(tempdir()))
+  ]
+)
+```
+
+### 5. Determine signal intensity drift across the analytical run
+The total ion counts for each sample are plotted for each batch and ionization mode below. The lines represent the linear models calculated for each batch/mode and indicate the overall variation in signal intensity across the analytical run. Often these variations arise in large datasets (> 100-200 samples) or between batches but can be corrected with machine learning methods that correct systematic errors in instrument signal. 
+```{r sign01, echo=F, fig.align= "center", fig.width=12, fig.height=8, results=T, message=F, warning=F, eval=TRUE}
+# Visualize dimension reduction for each batch
+invisible(lapply(
+  seq.int(1, length(data2[["signal drift"]]), 1),
+  function(i) {
+    tp1 <- tempfile(
+      pattern = paste(
+        "sign01_",
+        names(data2[["signal drift"]])[[i]],
+        sep = ""
+      ),
+      fileext = ".png"
+    )
+    ggplot2::ggsave(
+      tp1,
+      data2[["signal drift"]][[i]],
+      width = 36,
+      height = 24,
+      units = "cm",
+      dpi = 600
+    )
+  }
+))
+if (length(names(data2[["signal drift"]]) > 1)) {
+  print("Multiple batches in report; Plot order from top-bottom:")
+  print(names(data2[["signal drift"]]))
+}
+# Include in report
+knitr::include_graphics(
+  path = list.files(tempdir(), full.names = TRUE)[
+    grepl("sign01", list.files(tempdir()))
+  ]
+)
+```
+
+### 6. Confirm correlation between related sample groups
+The correlation between samples for all batches/modes are included below for both the imputed and normalized data. Note that the correlation values for samples within the same group should be almost perfectly linear (e.g. a value of 1).  
+```{r cor01, echo=F, fig.width=3, fig.height=3, results=T, message=F, warning=F, eval=TRUE}
+# Save all heatmaps as tempfiles
+invisible(lapply(
+  seq.int(1, length(data2[["correlation"]]), 1),
+  function(i) {
+    invisible(lapply(
+      seq.int(1, length(data2[["correlation"]][[i]]), 1),
+      function(j) {
+        lapply(
+          seq.int(1, length(data2[["correlation"]][[i]][[j]]), 1),
+          function(k) {
+            tp1 <- tempfile(
+              pattern = paste(
+                "heat02_",
+                names(data2[["correlation"]])[[i]], "_",
+                names(data2[["correlation"]][[i]])[[j]], "_",
+                names(data2[["correlation"]][[i]][[j]])[[k]],
+                sep = ""
+              ),
+              fileext = ".png"
+            )
+            grDevices::png(
+              tp1,
+              width = 22,
+              height = 22,
+              units = "cm",
+              res = 700
+            )
+            invisible(print(data2[["correlation"]][[i]][[j]][[k]]))
+            grDevices::dev.off()
+          }
+        )
+      }
+    ))
+  }
+))
+# Include in report
+knitr::include_graphics(
+  path = list.files(tempdir(), full.names = TRUE)[
+    grepl("heat02", list.files(tempdir()))
+  ]
+)
+```
+
+### 7. Assess QC and experimental sample relative standard deviations
+The median values for compound relative standard deviation are included in the following table for each batch, mode, and data type. In general, the median values for QC samples (e.g. pooled experimental samples, reference pooled samples) should be lower than the values for the treatment groups within the study. Additional normalization may be necessary if the median QC RSD percentages are > 20%.
+```{r rsd01, echo=F, fig.align= "center", fig.width=12, fig.height=8, results=T, message=F, warning=F, eval=TRUE}
+shiny::fluidRow(
+  shiny::column(2),
+  shiny::column(
+    8,
+    # Sample numbers per group
+    shiny::HTML(kableExtra::kable_styling(
+      kableExtra::kbl(
+        rep2$rsd,
+        align = "c",
+        caption = "Median RSD Summary Table"
+      ),
+      bootstrap_options = c("striped"),
+      full_width = TRUE
+    ))
+  ),
+  shiny::column(2)
+)
+```
+

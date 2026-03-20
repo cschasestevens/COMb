@@ -41,7 +41,8 @@ to use. Ignored when fc_class is set to FALSE.}
 \item{lipid_fc}{(Lipidomics Only) Logical indicating
 whether related lipid class fold changes should be calculated.
 If TRUE, calculates lipid class averages and calculates related class
-ratios prior to treatment group comparisons.}
+ratios prior to treatment group comparisons. Class comparisons are
+calculated based on the HiVE package.}
 
 \item{comp_grp}{Only applicable if lipid_fc is TRUE; Should treatment
 group fold changes be calculated? If FALSE, returns lipid class ratios

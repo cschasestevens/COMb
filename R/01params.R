@@ -37,7 +37,7 @@ ms_input <- function( # nolint
 ) {
   if(is.null(f)) { # nolint
     print("No data file was selected; using example dataset...")
-    data("example1", package = "Stevens.MSAnalyze")
+    data("example1", package = "COMb")
     d <- example1 # nolint
     a1 <- data.frame(
       "ID" = seq.int(

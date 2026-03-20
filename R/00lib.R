@@ -38,23 +38,30 @@ col_univ <- function() {
 col_grad <- function(
   scm = 1
 ) {
-  if(scm == 1) { # nolint
+  if (scm == 1) {
     c1 <- viridis::viridis(12)
   }
-  if(scm == 2) { # nolint
+  if (scm == 2) {
     c1 <- RColorBrewer::brewer.pal(name = "YlOrBr", n = 9)
   }
-  if(scm == 3) { # nolint
+  if (scm == 3) {
     c1 <- c("#2e86c1", "white", "#f5b7b1", "#e74c3c")
   }
-  if(scm == 4) { # nolint
+  if (scm == 4) {
     c1 <- c("lightblue", "red", "darkred")
   }
-  if(scm == 5) { # nolint
+  if (scm == 5) {
     c1 <- c("#2e86c1", "white", "#e74c3c")
   }
-  if(scm == 6) { # nolint
+  if (scm == 6) {
     c1 <- c("dodgerblue4", "#2e86c1", "white", "#e74c3c")
+  }
+  if (scm == 7) {
+    c1 <- c(
+      "dodgerblue4", "#2e86c1",
+      "white",
+      "#e74c3c", "darkred"
+    )
   }
   return(c1)
 }

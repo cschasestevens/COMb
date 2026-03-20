@@ -1,4 +1,4 @@
-# COMb v1.04 (20251009)
+# COMb v2.00 (20260320)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -35,7 +35,8 @@ Utilizes various R packages to perform processing and analysis of untargeted and
         * circlize,
         * ComplexHeatmap,
         * ggpmisc,
-        * DescTools
+        * DescTools,
+        * SummarizedExperiment
 
 ### Installation
 * Run the following in a new R session on the command line or within R-Studio:
@@ -70,6 +71,10 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.00a
+    * Processed data are now formatted as SummarizedExperiments for reproducibility.
+    * All functions now also accept SummarizedExperiment objects as inputs.
+    * Added ms_qc_report function for generating summary reports from quality control assessment conducted by ms_qc.
 * 1.04
     * Added internal standard normalization to
     ms_data_norm().

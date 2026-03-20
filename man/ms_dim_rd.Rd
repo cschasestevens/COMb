@@ -5,35 +5,29 @@
 \title{Dimension Reduction}
 \usage{
 ms_dim_rd(
-  mat1,
-  md,
+  exp1,
+  asy = "norm.pareto",
   md_var,
-  sid = "SampleID",
   dim_type = "PCA",
-  data_scale = TRUE,
   ret_umap = FALSE,
   dim1 = "2D",
-  p_type = "single",
-  p_lab = FALSE
+  p_lab = TRUE,
+  show_axes = TRUE,
+  namefile = NULL,
+  flag_outliers = FALSE,
+  outlier_calc = NULL,
+  sid = NULL
 )
 }
 \arguments{
-\item{mat1}{Pareto-scaled data matrix returned by ms_data_check() or
-a data matrix containing samples as rows and compounds as variables.}
+\item{exp1}{SummarizedExperiment containing a pareto-scaled assay.}
 
-\item{md}{Data frame containing sample information.}
+\item{asy}{Assay to use for dimension reduction.}
 
-\item{md_var}{Vector of either a single variable or multiple variables
-to plot. For single dimension reduction plots, only a single variable
-should be listed.}
-
-\item{sid}{Sample ID column used for merging input and metadata.}
+\item{md_var}{Name of column data variable for plot overlay.}
 
 \item{dim_type}{Dimension reduction technique to use for plotting.
 Currently available options are "PCA", "UMAP", or "PLSDA".}
-
-\item{data_scale}{If data have not been scaled, perform log2-transform
-and pareto scaling.}
 
 \item{ret_umap}{Only used if dim_type = "UMAP"; Use Python umap-learn
 for calculating UMAP (TRUE or FALSE).}
@@ -41,13 +35,24 @@ for calculating UMAP (TRUE or FALSE).}
 \item{dim1}{Number of dimensions to plot data (Either "2D" or "3D").
 Only 2D plots are used if plotting multiple panels.}
 
-\item{p_type}{Plot either a single variable or a list of metadata
-variables. Enter either "single" or "list" to control output.}
-
 \item{p_lab}{Label groups on plot panels (Only available if "2D").}
+
+\item{show_axes}{Should the x and y axis information be shown on the plot?}
+
+\item{namefile}{If dim1 is "3D", provide the file name for saving the plot.}
+
+\item{flag_outliers}{If TRUE, flag samples that are +/- 3 standard
+deviations from the individual group means. Generally used only when
+evaluating results from ms_data_norm.}
+
+\item{outlier_calc}{If flag_outliers is TRUE, provide the column name
+containing the TIC for determining outliers.}
+
+\item{sid}{If flag_outliers is TRUE, provide the name of the sample ID
+column for labeling outliers.}
 }
 \value{
-A single plot or series of dimension reduction plots.
+A dimension reduction plot of the specified type.
 }
 \description{
 Performs dimension reduction for a selected dataset using one
@@ -56,14 +61,8 @@ of the following methods: PCA, UMAP, PLSDA.
 \examples{
 
 # ms_dim_rd(
-#   mat1 = d[["data"]][["data.scale"]],
-#   md = d[["data"]][["meta"]],
-#   md_var = c("Organ"),
-#   dim_type = "PCA",
-#   ret_umap = TRUE,
-#   dim1 = "3D",
-#   p_type = "single",
-#   p_lab = FALSE
+#   exp1 = data1,
+#   md_var = "Group"
 # )
 
 }

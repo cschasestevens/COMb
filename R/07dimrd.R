@@ -3,125 +3,56 @@
 #' Performs dimension reduction for a selected dataset using one
 #' of the following methods: PCA, UMAP, PLSDA.
 #'
-#' @param mat1 Pareto-scaled data matrix returned by ms_data_check() or
-#' a data matrix containing samples as rows and compounds as variables.
-#' @param md Data frame containing sample information.
-#' @param md_var Vector of either a single variable or multiple variables
-#' to plot. For single dimension reduction plots, only a single variable
-#' should be listed.
-#' @param sid Sample ID column used for merging input and metadata.
+#' @param exp1 SummarizedExperiment containing a pareto-scaled assay.
+#' @param asy Assay to use for dimension reduction.
+#' @param md_var Name of column data variable for plot overlay.
 #' @param dim_type Dimension reduction technique to use for plotting.
 #' Currently available options are "PCA", "UMAP", or "PLSDA".
-#' @param data_scale If data have not been scaled, perform log2-transform
-#' and pareto scaling.
 #' @param ret_umap Only used if dim_type = "UMAP"; Use Python umap-learn
 #' for calculating UMAP (TRUE or FALSE).
 #' @param dim1 Number of dimensions to plot data (Either "2D" or "3D").
 #' Only 2D plots are used if plotting multiple panels.
-#' @param p_type Plot either a single variable or a list of metadata
-#' variables. Enter either "single" or "list" to control output.
 #' @param p_lab Label groups on plot panels (Only available if "2D").
-#' @return A single plot or series of dimension reduction plots.
+#' @param show_axes Should the x and y axis information be shown on the plot?
+#' @param namefile If dim1 is "3D", provide the file name for saving the plot.
+#' @param flag_outliers If TRUE, flag samples that are +/- 3 standard
+#' deviations from the individual group means. Generally used only when
+#' evaluating results from ms_data_norm.
+#' @param outlier_calc If flag_outliers is TRUE, provide the column name
+#' containing the TIC for determining outliers.
+#' @param sid If flag_outliers is TRUE, provide the name of the sample ID
+#' column for labeling outliers.
+#' @return A dimension reduction plot of the specified type.
 #' @examples
 #'
 #' # ms_dim_rd(
-#' #   mat1 = d[["data"]][["data.scale"]],
-#' #   md = d[["data"]][["meta"]],
-#' #   md_var = c("Organ"),
-#' #   dim_type = "PCA",
-#' #   ret_umap = TRUE,
-#' #   dim1 = "3D",
-#' #   p_type = "single",
-#' #   p_lab = FALSE
+#' #   exp1 = data1,
+#' #   md_var = "Group"
 #' # )
 #'
 #' @export
 ms_dim_rd <- function( # nolint
-  mat1,
-  md,
+  exp1,
+  asy = "norm.pareto",
   md_var,
-  sid = "SampleID",
   dim_type = "PCA",
-  data_scale = TRUE,
   ret_umap = FALSE,
   dim1 = "2D",
-  p_type = "single",
-  p_lab = FALSE
+  p_lab = TRUE,
+  show_axes = TRUE,
+  namefile = NULL,
+  flag_outliers = FALSE,
+  outlier_calc = NULL,
+  sid = NULL
 ) {
-  d1 <- mat1
-  md1 <- md
-  if(data_scale == FALSE) { # nolint
-    dimr <- list(
-      "input" = d1,
-      "meta" = md1
-    )
-    dimr[["input"]] <- magrittr::set_rownames(
-      dimr[["input"]], md1[[sid]]
-    )
-  }
-  if(data_scale == TRUE) { # nolint
-    # Imputed data sets for dimension reduction
-    ## Input data
-    dimr <- list(
-      "input" = d1,
-      "meta" = md1
-    )
-    dimr[["input"]] <- magrittr::set_rownames(
-      dimr[["input"]], md1[[sid]]
-    )
-    dimr[["imputed"]] <- dimr[["input"]]
-    ### replace NA with 0
-    dimr[["imputed"]][is.na(dimr[["imputed"]])] <- 0
-    ### remove missing compounds
-    dimr[["imputed"]] <- dimr[["imputed"]][colSums(dimr[["imputed"]]) > 0]
-    ### replace zeroes with 1/10th of the lowest non-zero
-    ### value per compound
-    dimr[["imputed"]] <- magrittr::set_rownames(dplyr::bind_cols(
-      lapply(
-        seq.int(1, ncol(dimr[["imputed"]]), 1),
-        function(x) {
-          d1 <- dimr[["imputed"]][[x]]
-          d1 <- ifelse(
-            d1 == 0,
-            0.1 * min(d1[d1 > 0]),
-            d1
-          )
-          d1 <- setNames(as.data.frame(d1), names(dimr[["imputed"]])[[x]])
-          return(d1) # nolint
-        }
-      )
-    ), rownames(dimr[["imputed"]]))
-    ## Log2-transformation
-    dimr[["data.log2"]] <- magrittr::set_rownames(setNames(
-      as.data.frame(
-        lapply(
-          seq.int(1, ncol(dimr[["imputed"]]), 1),
-          function(x) {
-            log2(dimr[["imputed"]][[x]])
-          }
-        )
-      ),
-      c(names(dimr[["imputed"]]))
-    ), row.names(dimr[["imputed"]]))
-    ## Pareto scaling
-    dimr[["input"]] <- setNames(
-      as.data.frame(
-        apply(
-          apply(
-            as.matrix(dimr[["data.log2"]]),
-            2,
-            function(x) x - mean(x)
-          ),
-          2,
-          function(y) round(y / sqrt(sd(y)), digits = 2)
-        )
-      ),
-      c(names(dimr[["data.log2"]]))
-    )
-  }
-  if(dim_type == "PCA") { # nolint
-    p1 <- prcomp(dimr[["input"]])
+  # Load data
+  d1 <- exp1
+  #---- PCA ----
+  if (dim_type == "PCA") {
+    # Calculate PCA
+    p1 <- prcomp(t(assay(d1, asy))) # nolint
     vrc <- summary(p1)$importance[2, ]
+    ## Format input
     p2 <- setNames(
       as.data.frame(p1[["x"]][, 1:3]),
       c(
@@ -138,218 +69,12 @@ ms_dim_rd <- function( # nolint
         )
       )
     )
-    md2 <- md1[md1[[sid]] %in% rownames(p2), ]
-    p2[[sid]] <- rownames(p2)
-    p2 <- dplyr::left_join(
-      p2,
-      md2,
-      by = sid
-    )
-    # Plot
-    if(p_type == "single") { # nolint
-      if(dim1 == "2D") { # nolint
-        if(p_lab == TRUE) { # nolint
-          p3 <- ggplot2::ggplot(
-            p2,
-            ggplot2::aes(
-              x = .data[[names(p2)[[1]]]], # nolint
-              y = .data[[names(p2)[[2]]]], # nolint
-              color = .data[[md_var]], # nolint
-              label = .data[[md_var]] # nolint
-            )
-          ) +
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ggrepel::geom_text_repel(
-              data = setNames(
-                aggregate(
-                  p2[, 1:2],
-                  list(p2[[md_var]]),
-                  FUN = median
-                ),
-                c(md_var, names(p2)[1:2]
-                )
-              ),
-              size = 4,
-              bg.color = "white"
-            ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              panel.grid.major.y = ggplot2::element_blank(),
-              axis.text.x = ggplot2::element_blank(),
-              axis.text.y = ggplot2::element_blank(),
-              axis.title.x = ggplot2::element_blank(),
-              axis.title.y = ggplot2::element_blank(),
-              axis.ticks = ggplot2::element_blank(),
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1), "cm"
-              ),
-              legend.position = "none"
-            )
-        }
-        if(p_lab == FALSE) { # nolint
-          p3 <- ggplot2::ggplot(
-            p2,
-            ggplot2::aes(
-              x = .data[[names(p2)[[1]]]], # nolint
-              y = .data[[names(p2)[[2]]]], # nolint
-              color = .data[[md_var]], # nolint
-              label = .data[[md_var]] # nolint
-            )
-          ) +
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ggplot2::labs(
-              y = names(p2)[[2]],
-              x = names(p2)[[1]]
-            ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1), "cm"
-              )
-            )
-        }
-      }
-      if(dim1 == "3D") { # nolint
-        p3 <- plotly::plot_ly(
-          p2,
-          x = ~.data[[names(p2)[[1]]]], # nolint
-          y = ~.data[[names(p2)[[2]]]], # nolint
-          z = ~.data[[names(p2)[[3]]]], # nolint
-          color = ~as.factor(.data[[md_var]]), # nolint
-          colors = col_univ() # nolint
-        ) %>% # nolint
-          plotly::add_markers(marker = list(size = 4)) %>%
-          plotly::layout(
-            autosize = FALSE,
-            width = 800,
-            height = 600,
-            margin = list(
-              l = 50,
-              r = 50,
-              b = 25,
-              t = 25,
-              pad = 1
-            )
-          )
-        htmlwidgets::saveWidget(
-          p3,
-          file = paste("analysis/plot.3D.pca.", md_var, ".html", sep = "") # nolint
-        )
-      }
-    }
-    if(p_type == "list") { # nolint
-      d2_list <- setNames(
-        lapply(
-          c(md_var), # nolint
-          function(x) {
-            p2[, c(
-              1,
-              2,
-              x
-            )
-            ]
-          }
-        ),
-        c(md_var)
-      )
-      d2_plot <- lapply(
-        c(md_var), # nolint
-        function(x) {
-          p <-  ggplot2::ggplot(
-            d2_list[[x]],
-            ggplot2::aes(
-              x = .data[[names(d2_list[[x]])[[1]]]], # nolint
-              y = .data[[names(d2_list[[x]])[[2]]]], # nolint
-              color = as.factor(.data[[x]]), # nolint
-              label = as.factor(.data[[x]]) # nolint
-            )
-          ) +
-            ggplot2::labs(
-              y = names(p2)[[2]],
-              x = names(p2)[[1]]
-            ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            # Add points
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              panel.grid.major.y = ggplot2::element_blank(),
-              axis.text.x = ggplot2::element_blank(),
-              axis.text.y = ggplot2::element_blank(),
-              axis.title.x = ggplot2::element_blank(),
-              axis.title.y = ggplot2::element_blank(),
-              axis.ticks = ggplot2::element_blank(),
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1),
-                "cm"
-              ),
-              legend.position = c(
-                0.9,
-                0.85
-              )
-            )
-          return(p) # nolint
-        }
-      )
-      # Combine output
-      p3 <- ggpubr::ggarrange(
-        plotlist = d2_plot,
-        labels = c(
-          names(
-            d2_plot
-          )
-        ),
-        ncol = ifelse(
-          length(
-            d2_plot
-          ) <= 3,
-          length(
-            d2_plot
-          ),
-          3
-        ),
-        nrow = ifelse(
-          length(
-            d2_plot
-          ) > 3,
-          ceiling(
-            length(
-              d2_plot
-            ) /
-              3
-          ),
-          1
-        )
-      )
-    }
   }
-  if(dim_type == "UMAP") { # nolint
+  #---- UMAP ----
+  if (dim_type == "UMAP") {
     if(ret_umap == TRUE) { # nolint
       p1 <- umap::umap(
-        dimr[["input"]],
+        t(assay(d1, asy)), # nolint
         method = "umap-learn",
         n_epochs = 500,
         n_components = 3,
@@ -359,7 +84,7 @@ ms_dim_rd <- function( # nolint
     }
     if(ret_umap == FALSE) { # nolint
       p1 <- umap::umap(
-        dimr[["input"]],
+        t(assay(d1, asy)), # nolint
         n_epochs = 500,
         n_components = 3,
         verbose = TRUE,
@@ -370,207 +95,273 @@ ms_dim_rd <- function( # nolint
       as.data.frame(p1[["layout"]]),
       c("UMAP.1", "UMAP.2", "UMAP.3")
     )
-    md2 <- md1[md1[[sid]] %in% rownames(p2), ]
-    p2[[sid]] <- rownames(p2)
-    p2 <- dplyr::left_join(
-      p2,
-      md2,
-      by = sid
-    )
-    if(p_type == "single") { # nolint
-      if(dim1 == "2D") { # nolint
-        if(p_lab == TRUE) { # nolint
-          p3 <- ggplot2::ggplot(
-            p2,
-            ggplot2::aes(
-              x=`UMAP.1`, # nolint
-              y=`UMAP.2`, # nolint
-              color = .data[[md_var]], # nolint
-              label = .data[[md_var]] # nolint
-            )
-          ) +
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ggrepel::geom_text_repel(
-              data = setNames(
-                aggregate(
-                  p2[, c("UMAP.1", "UMAP.2")],
-                  list(p2[[md_var]]),
-                  FUN = median
-                ),
-                c(md_var, names(p2)[1:2]
-                )
-              ),
-              size = 4,
-              bg.color = "white"
-            ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              panel.grid.major.y = ggplot2::element_blank(),
-              axis.text.x = ggplot2::element_blank(),
-              axis.text.y = ggplot2::element_blank(),
-              axis.title.x = ggplot2::element_blank(),
-              axis.title.y = ggplot2::element_blank(),
-              axis.ticks = ggplot2::element_blank(),
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1), "cm"
-              ),
-              legend.position = "none"
-            )
-        }
-        if(p_lab == FALSE) { # nolint
-          p3 <- ggplot2::ggplot(
-            p2,
-            ggplot2::aes(
-              x=`UMAP.1`, # nolint
-              y=`UMAP.2`, # nolint
-              color = .data[[md_var]], # nolint
-              label = .data[[md_var]] # nolint
-            )
-          ) +
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1), "cm"
+  }
+  #---- PLSDA ----
+  if (dim_type == "PLSDA") {
+
+  }
+  #---- Outlier flag ----
+  if (flag_outliers == TRUE) {
+    # Determine samples +/- 3 SD from mean mTIC of each group
+    ## Calculate normalized group TIC mean and sd
+    colData(d1) <- cbind( # nolint
+      colData(d1),
+      data.frame(
+        "TIC.group.mean" = unlist(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(i) {
+              mean(
+                colData(d1)[ # nolint
+                  grepl(
+                    colData(d1)[i, ][[md_var]], # nolint
+                    colData(d1)[[md_var]]
+                  ),
+                ][[outlier_calc]]
               )
-            )
-        }
-      }
-      if(dim1 == "3D") { # nolint
-        p3 <- plotly::plot_ly(
-          p2,
-          x = ~`UMAP.1`, # nolint
-          y = ~`UMAP.2`, # nolint
-          z = ~`UMAP.3`, # nolint
-          color = ~as.factor(.data[[md_var]]), # nolint
-          colors = col_univ() # nolint
-        ) %>% # nolint
-          plotly::add_markers(marker = list(size = 4)) %>%
-          plotly::layout(
-            autosize = FALSE,
-            width = 800,
-            height = 600,
-            margin = list(
-              l = 50,
-              r = 50,
-              b = 25,
-              t = 25,
-              pad = 1
-            )
+            }
           )
-        htmlwidgets::saveWidget(
-          p3,
-          file = paste("analysis/plot.3D.umap.", md_var, ".html", sep = "") # nolint
+        ),
+        "TIC.group.sd" = unlist(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(i) {
+              sd(
+                colData(d1)[ # nolint
+                  grepl(
+                    colData(d1)[i, ][[md_var]], # nolint
+                    colData(d1)[[md_var]]
+                  ),
+                ][[outlier_calc]]
+              )
+            }
+          )
         )
+      )
+    )
+    ## Calculate number of standard deviations from mean
+    colData(d1)[["sd.number"]] <- abs( # nolint
+      colData(d1)[[outlier_calc]] - colData(d1)[["TIC.group.mean"]]
+    ) /
+      colData(d1)[["TIC.group.sd"]]
+    ## flag samples +/- 3 SD from mean
+    colData(d1)[["Outlier.flag"]] <- unlist( # nolint
+      lapply(
+        seq.int(1, ncol(d1), 1),
+        function(i) {
+          ifelse(
+            colData(d1)[i, ][[outlier_calc]] > # nolint
+              colData(d1)[i, ][["TIC.group.mean"]] +
+                3 * colData(d1)[i, ][["TIC.group.sd"]] ||
+              colData(d1)[i, ][[outlier_calc]] <
+                colData(d1)[i, ][["TIC.group.mean"]] -
+                  3 * colData(d1)[i, ][["TIC.group.sd"]],
+            1, 0
+          )
+        }
+      )
+    )
+  }
+  #---- Plot ----
+  if(dim1 == "2D") { # nolint
+    if(p_lab == TRUE) { # nolint
+      # Calculate median label positions
+      p3lab <- setNames(
+        aggregate(
+          p2[, 1:2],
+          list(colData(d1)[[md_var]]), # nolint
+          FUN = median
+        ),
+        c(md_var, names(p2)[1:2]
+        )
+      )
+      # Plot
+      p3 <- ggplot2::ggplot(
+        data = p2,
+        ggplot2::aes(
+          x = .data[[names(p2)[[1]]]], # nolint
+          y = .data[[names(p2)[[2]]]] # nolint
+        )
+      ) +
+        ggplot2::geom_point(
+          ggplot2::aes(
+            color = colData(d1)[[md_var]] # nolint
+          ),
+          shape = 16,
+          size = 2,
+          alpha = 0.6
+        ) +
+        ggrepel::geom_text_repel(
+          data = p3lab,
+          ggplot2::aes(
+            label = p3lab[[md_var]]
+          ),
+          size = 4,
+          bg.color = "white"
+        ) +
+        ggplot2::scale_color_manual(
+          paste(""),
+          values = col_univ() # nolint
+        ) +
+        ms_theme() # nolint
+      # If show_axes is FALSE
+      if (show_axes == FALSE) {
+        p3 <- p3 +
+          ggplot2::theme(
+            panel.grid.major.y = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_blank(),
+            axis.text.y = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_blank(),
+            axis.title.y = ggplot2::element_blank(),
+            axis.ticks = ggplot2::element_blank(),
+            plot.margin = ggplot2::unit(
+              c(0.1, 0.1, 0.1, 0.1), "cm"
+            ),
+            legend.position = "none"
+          )
       }
     }
-    if(p_type == "list") { # nolint
-      d2_list <- setNames(
-        lapply(
-          c(md_var), # nolint
-          function(x) {
-            p2[, c(
-              x,
-              "UMAP.1",
-              "UMAP.2"
-            )
-            ]
-          }
-        ),
-        c(md_var)
-      )
-      d2_plot <- lapply(
-        c(md_var), # nolint
-        function(x) {
-          p <-  ggplot2::ggplot(
-            d2_list[[x]],
-            ggplot2::aes(
-              x=`UMAP.1`, # nolint
-              y=`UMAP.2`, # nolint
-              color = as.factor(.data[[x]]), # nolint
-              label = as.factor(.data[[x]]) # nolint
-            )
-          ) +
-            ggplot2::scale_color_manual(
-              paste(""),
-              values = col_univ() # nolint
-            ) +
-            # Add points
-            ggplot2::geom_point(
-              shape = 16,
-              size = 2,
-              alpha = 0.6
-            ) +
-            ms_theme() + # nolint
-            ggplot2::theme(
-              panel.grid.major.y = ggplot2::element_blank(),
-              axis.text.x = ggplot2::element_blank(),
-              axis.text.y = ggplot2::element_blank(),
-              axis.title.x = ggplot2::element_blank(),
-              axis.title.y = ggplot2::element_blank(),
-              axis.ticks = ggplot2::element_blank(),
-              plot.margin = ggplot2::unit(
-                c(0.1, 0.1, 0.1, 0.1),
-                "cm"
-              ),
-              legend.position = c(
-                0.9,
-                0.85
-              )
-            )
-          return(p) # nolint
-        }
-      )
-      # Combine output
-      p3 <- ggpubr::ggarrange(
-        plotlist = d2_plot,
-        labels = c(
-          names(
-            d2_plot
-          )
-        ),
-        ncol = ifelse(
-          length(
-            d2_plot
-          ) <= 3,
-          length(
-            d2_plot
-          ),
-          3
-        ),
-        nrow = ifelse(
-          length(
-            d2_plot
-          ) > 3,
-          ceiling(
-            length(
-              d2_plot
-            ) /
-              3
-          ),
-          1
+    if(p_lab == FALSE) { # nolint
+      # Plot
+      p3 <- ggplot2::ggplot(
+        data = p2,
+        ggplot2::aes(
+          x = .data[[names(p2)[[1]]]], # nolint
+          y = .data[[names(p2)[[2]]]] # nolint
         )
+      ) +
+        ggplot2::geom_point(
+          ggplot2::aes(
+            color = colData(d1)[[md_var]] # nolint
+          ),
+          shape = 16,
+          size = 2,
+          alpha = 0.6
+        ) +
+        ggplot2::scale_color_manual(
+          paste(""),
+          values = col_univ() # nolint
+        ) +
+        ms_theme() # nolint
+      # If show_axes is FALSE
+      if (show_axes == FALSE) {
+        p3 <- p3 +
+          ggplot2::theme(
+            panel.grid.major.y = ggplot2::element_blank(),
+            axis.text.x = ggplot2::element_blank(),
+            axis.text.y = ggplot2::element_blank(),
+            axis.title.x = ggplot2::element_blank(),
+            axis.title.y = ggplot2::element_blank(),
+            axis.ticks = ggplot2::element_blank(),
+            plot.margin = ggplot2::unit(
+              c(0.1, 0.1, 0.1, 0.1), "cm"
+            ),
+            legend.position = "none"
+          )
+      }
+    }
+    p3 <- p3 + ggplot2::labs(title = dim_type)
+    if (flag_outliers == TRUE) {
+      # Generate loadings plot
+      p3 <- p3 +
+        ggrepel::geom_label_repel(
+          ggplot2::aes(
+            label = ifelse(
+              colData(d1)[["Outlier.flag"]] == 1, # nolint
+              colData(d1)[[sid]],
+              ""
+            ),
+            alpha = ifelse(
+              colData(d1)[["Outlier.flag"]] == 1,
+              1, 0
+            ),
+            linewidth = ifelse(
+              colData(d1)[["Outlier.flag"]] == 1,
+              0.15, NA
+            )
+          ),
+          show.legend = FALSE
+        )
+      # Generate standard deviation plot
+      d2 <- as.data.frame(colData(d1)) # nolint
+      d2 <- d2[order(d2[[md_var]]), ] # nolint
+      d2[["ID"]] <- seq.int(1, nrow(d2), 1)
+      p4 <- ggplot2::ggplot(
+        data = d2,
+        ggplot2::aes(x = .data[["ID"]])
+      ) +
+        # mean line
+        ggplot2::geom_point(
+          ggplot2::aes(
+            y = .data[["sd.number"]],
+            color = .data[[md_var]] # nolint
+          )
+        ) +
+        ggplot2::geom_hline(
+          yintercept = 3,
+          linetype = "dashed"
+        ) +
+        # outlier labels
+        ggrepel::geom_label_repel(
+          ggplot2::aes(
+            y = .data[["sd.number"]],
+            label = ifelse(
+              .data[["sd.number"]] > 3, # nolint
+              d2[[sid]],
+              ""
+            ),
+            alpha = ifelse(
+              .data[["sd.number"]] > 3,
+              1, 0
+            ),
+            linewidth = ifelse(
+              .data[["sd.number"]] > 3,
+              0.15, NA
+            )
+          ),
+          show.legend = FALSE
+        ) +
+        ggplot2::labs(
+          title = "SD Plot",
+          x = "Sample ID",
+          y = "Standard Deviations From Group Mean"
+        ) +
+        ggplot2::scale_color_manual(
+          paste(""),
+          values = col_univ() # nolint
+        ) +
+        ms_theme() # nolint
+      p3 <- ggpubr::ggarrange(
+        p3, p4, nrow = 1, ncol = 2
       )
     }
   }
-  if(dim_type == "PLSDA") { # nolint
-
+  if(dim1 == "3D") { # nolint
+    p3 <- plotly::plot_ly(
+      p2,
+      x = ~.data[[names(p2)[[1]]]], # nolint
+      y = ~.data[[names(p2)[[2]]]], # nolint
+      z = ~.data[[names(p2)[[3]]]], # nolint
+      color = ~as.factor(colData(d1)[[md_var]]), # nolint
+      colors = col_univ() # nolint
+    ) %>% # nolint
+      plotly::add_markers(marker = list(size = 4)) %>%
+      plotly::layout(
+        autosize = FALSE,
+        width = 800,
+        height = 600,
+        margin = list(
+          l = 50,
+          r = 50,
+          b = 25,
+          t = 25,
+          pad = 1
+        )
+      )
+    htmlwidgets::saveWidget(
+      p3,
+      file = namefile # nolint
+    )
   }
   return(p3)
 }
