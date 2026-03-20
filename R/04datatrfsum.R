@@ -220,16 +220,6 @@ ms_data_check <- function(
     row_names_gp = grid::gpar(fontsize = fsr),
     column_names_gp = grid::gpar(fontsize = fsc)
   )
-  # Dimension reduction plot
-  dimr[["dimr"]] <- ms_dim_rd(
-    mat1 = dimr[["data.scale"]],
-    md = dimr[["meta"]],
-    md_var = mdv,
-    sid = sid,
-    dim_type = dimtype,
-    p_lab = plab,
-    data_scale = FALSE
-  )
   return(dimr)
 }
 
@@ -522,15 +512,6 @@ tms_data_check <- function(
     column_title = "Sample Correlation",
     row_names_gp = grid::gpar(fontsize = 8),
     column_names_gp = grid::gpar(fontsize = 8)
-  )
-  # Dimension reduction plot
-  dimr[["dimr"]] <- ms_dim_rd(
-    mat1 = dimr[["data.scale"]],
-    md = dimr[["meta"]],
-    md_var = md_var,
-    dim_type = dimtype,
-    p_lab = plab,
-    data_scale = FALSE
   )
   return(dimr)
 }
