@@ -1,4 +1,4 @@
-# COMb v2.00 (20260320)
+# COMb v2.00b (20260325)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -71,6 +71,11 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.00b
+    * ms_plot_lipidnet has been deprecated; lipid network plots are now created using the HiVE package (https://github.com/cschasestevens/HiVE).
+    * Updated ms_stat_uni for compatibility with updated ms_stat_fc function.
+    * Updated ms_stat_fc for simplified input and usage with ms_stat_uni.
+    * ms_stat_anova has now been superceded by ms_stat_uni.
 * 2.00a
     * Processed data are now formatted as SummarizedExperiments for reproducibility.
     * All functions now also accept SummarizedExperiment objects as inputs.
