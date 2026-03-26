@@ -702,3 +702,219 @@ ms_plot_bar <- function(
     )
   return(pv) # nolint
 }
+
+#' General Heatmap
+#'
+#' Generates a heatmap from a Seurat Object,
+#' which can be filtered based on differentially
+#' expressed genes.
+#'
+#' @param so A SummarizedExperiment object.
+#' @param stat_data Generate heatmap based on statistical results instead
+#' of intensity/abundance values from a summarizedexperiment. Results
+#' tables should be formatted according to outputs from ms_stat_uni.
+#' @param deg_sig Should only compounds/features with statistically significant
+#' differences in intensity/abundance be plotted?
+#' @param l_cstm (optional) Filter data based on custom compound list.
+#' @param asy Assay to use (ex. "norm" or "scaled").
+#' @param asy_type Assay type (either "norm" or "scaled"). If "scaled",
+#' the input data undergo no additional scaling.
+#' @param cl_var Grouping variable name.
+#' @param feat_var Variable from rowData containing compound names.
+#' @param h_w Numeric value for heatmap width (passed to ComplexHeatmap).
+#' @param h_h Numeric value for heatmap height (passed to ComplexHeatmap).
+#' @param fs_c Numeric value for column fontsize (passed to ComplexHeatmap).
+#' @param fs_r Numeric value for row fontsize (passed to ComplexHeatmap).
+#' @param cl_c Cluster columns?
+#' @param cl_r Cluster rows?
+#' @param rc Show column names?
+#' @param rn Show row names?
+#' @param rot_c Rotation of column names.
+#' @param col1 Gradient color scheme to use.
+#' @param transp Transpose heatmap input matrix (FALSE by default).
+#' @param legend1 Figure legend name.
+#' @return A ComplexHeatmap object.
+#' @examples
+#'
+#' # ms_plot_hm(so = data1)
+#'
+#' @export
+ms_plot_hm <- function(
+  so = NULL,
+  stat_data = NULL,
+  deg_sig = FALSE,
+  l_cstm = NULL,
+  asy = "scaled",
+  asy_type = "scaled",
+  cl_var = "Group",
+  feat_var = "Label",
+  h_w = 40,
+  h_h = 20,
+  fs_c = 6,
+  fs_r = 8,
+  cl_c = FALSE,
+  cl_r = FALSE,
+  rot_c = 45,
+  rc = TRUE,
+  rn = TRUE,
+  col1 = col_grad(scm = 5), # nolint
+  transp = FALSE,
+  legend1 = "Abundance"
+) {
+  #---- Select Compounds to Plot ----
+  # If stats data are not provided,
+  # return either all compounds or a custom list
+  if (is.null(stat_data)) {
+    # load sumexp
+    d <- so
+    # if custom list is not provided
+    if (is.null(l_cstm)) {
+      cl_mark <- rowData(d)[[feat_var]]
+    }
+    if (!is.null(l_cstm)) {
+      cl_mark <- rowData(d)[rowData(d)[[feat_var]] %in% l_cstm, ]
+    }
+    # Subset data and format as matrix
+    h <- setNames(
+      data.frame(
+        colData(d)[[cl_var]],
+        as.data.frame(
+          t(assay(d, asy)[rowData(d)[[feat_var]] %in% cl_mark, ])
+        )
+      ),
+      c("Group", cl_mark)
+    )
+    h[[1]] <- factor(
+      as.character(h[[1]]),
+      levels = gtools::mixedsort(unique(as.character(h[[1]])))
+    )
+  }
+  if (!is.null(stat_data)) {
+    h <- stat_data
+  }
+  #---- Format input data matrix ----
+  # Standard input
+  if (is.null(stat_data)) {
+    h_in <- as.matrix(
+      magrittr::set_rownames(
+        setNames(
+          as.data.frame(
+            lapply(
+              h[, 2:ncol(
+                h
+              )],
+              function(x) {
+                dplyr::select(
+                  aggregate(
+                    x,
+                    list(
+                      h[, 1]
+                    ),
+                    FUN = mean
+                  ),
+                  c(2)
+                )
+              }
+            )
+          ),
+          names(h[, 2:ncol(h)])
+        ),
+        levels(h[, 1])
+      )
+    )
+  }
+  # Stats input
+  if (!is.null(stat_data)) {
+    # Format stats results as matrix
+    # and include only significant compounds
+    if (deg_sig == TRUE) {
+      h_in <- h[h[["p.value"]] < 0.05, ]
+    }
+    if (deg_sig == FALSE) {
+      h_in <- h
+    }
+    # reassign factor levels
+    h_in[["Group"]] <- factor(
+      as.character(h_in[["Comparison"]]),
+      levels = gtools::mixedsort(
+        unique(as.character(h_in[["Comparison"]]))
+      )
+    )
+    # Create matrix
+    h_in <- reshape2::dcast(
+      h_in[, c("Group", "Name", "Log2FC")],
+      Group ~ Name,
+      value.var = "Log2FC"
+    )
+    h_in <- as.matrix(
+      magrittr::set_rownames(
+        setNames(
+          h_in[, 2:ncol(h_in)],
+          names(h_in[, 2:ncol(h_in)])
+        ),
+        levels(h_in[[1]])
+      )
+    )
+  }
+  qs <- quantile(
+    h_in,
+    probs = c(
+      0.05,
+      0.95
+    ),
+    na.rm = TRUE
+  )
+  if (is.null(stat_data)) {
+    h_in <- as.matrix(
+      as.data.frame(h_in)[, unlist(
+        lapply(
+          seq.int(1, ncol(as.data.frame(h_in)), 1),
+          function(x) {
+            !anyNA(as.data.frame(h_in)[x])
+          }
+        )
+      )
+      ]
+    )
+  }
+  if (transp == TRUE) {
+    h_in <- t(h_in)
+  }
+  if (qs[[1]] < 0) {
+    fun_hm_col <- circlize::colorRamp2(
+      c(
+        qs[[1]],
+        0,
+        qs[[2]]
+      ),
+      colors = col1
+    )
+  }
+  if (qs[[1]] > 0) {
+    fun_hm_col <- circlize::colorRamp2(
+      c(
+        qs[[1]],
+        round(mean(c(qs[[1]], qs[[2]])), digits = 0),
+        qs[[2]]
+      ),
+      colors = col_grad(scm = 4)
+    )
+  }
+  # Create Plot
+  h_out <- ComplexHeatmap::Heatmap(
+    h_in,
+    col = fun_hm_col,
+    name = legend1,
+    show_column_names = rc,
+    show_row_names = rn,
+    heatmap_width = ggplot2::unit(h_w, "cm"),
+    heatmap_height = ggplot2::unit(h_h, "cm"),
+    column_names_rot = rot_c,
+    column_names_gp = grid::gpar(fontsize = fs_c),
+    row_names_side = "left",
+    row_names_gp = grid::gpar(fontsize = fs_r),
+    cluster_columns = cl_c,
+    cluster_rows = cl_r
+  )
+  return(h_out)
+}

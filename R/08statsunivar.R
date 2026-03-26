@@ -15,6 +15,8 @@
 #' fc_method is "class" or "HiVE".
 #' @param fc_method Fold change calculation mode; either "standard",
 #' which is the most common, "class", or "HiVE".
+#' @param name_group If statistics comparing two groups is desired,
+#' provide a vector containing each group name for comparison.
 #' @return A data frame containing the combined ANOVA and fold change results
 #' for the specified variable(s).
 #' @examples
@@ -29,7 +31,8 @@ ms_stat_uni <- function( # nolint
   col_grp = "Group",
   col_class = "Class",
   col_lab = "Label",
-  fc_method = "standard"
+  fc_method = "standard",
+  name_group = NULL
 ) { # nolint
   #---- Setup ----
   # Load summarizedexperiment and associated data
@@ -44,6 +47,7 @@ ms_stat_uni <- function( # nolint
   md_var1 <- col_grp
   cc1 <- col_class
   cn1 <- col_lab
+  grpname <- name_group
   #---- Functions ----
   fun.check.norm <- function() { # nolint
     # Check for normality
@@ -73,7 +77,9 @@ ms_stat_uni <- function( # nolint
         "compounds have normally distributed intensities."
       )
     )
+    return(d1_check) # nolint
   }
+  # One-way ANOVA
   fun.stat.anova <- function() { # nolint
     fun.test.in <- function(y) { # nolint
       d2 <- tryCatch(
@@ -159,10 +165,11 @@ ms_stat_uni <- function( # nolint
               d2 <- dplyr::mutate(
                 d2,
                 "Name" = names(d1)[[y]],
-                "Comparison" = rownames(d2)
+                "Comparison" = rownames(d2),
+                "p.value" = d2[["p adj"]]
               )
-              d2 <- d2[, c("Name", "Comparison", "p adj")]
-              d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
               return(d2) # nolint
             }
           ),
@@ -180,10 +187,11 @@ ms_stat_uni <- function( # nolint
               d2 <- dplyr::mutate(
                 d2,
                 "Name" = names(d1)[[y]],
-                "Comparison" = rownames(d2)
+                "Comparison" = rownames(d2),
+                "p.value" = d2[["p adj"]]
               )
-              d2 <- d2[, c("Name", "Comparison", "p adj")]
-              d2[["FDR"]] <- p.adjust(d2[["p adj"]], method = "fdr")
+              d2 <- d2[, c("Name", "Comparison", "p.value")]
+              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
               return(d2) # nolint
             }
           ),
@@ -194,6 +202,136 @@ ms_stat_uni <- function( # nolint
     d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
     return(d_mult) # nolint
   }
+  # Wilcox Rank Sum Test
+  fun.stat.wilcox <- function() { # nolint
+    fun.test.in <- function(y) { # nolint
+      d2 <- tryCatch(
+        {
+          g1 <- d1[grepl(grpname[[1]], md1[[md_var1]]), ][[y]]
+          g2 <- d1[grepl(grpname[[2]], md1[[md_var1]]), ][[y]]
+          d2 <- setNames(
+            as.data.frame(
+              wilcox.test(g1, g2)[["p.value"]]
+            ),
+            "p.value"
+          )
+        },
+        error = function(e) {
+          print("Wilcox Test failed for selected comparison...")
+          d2 <- data.frame("p.value" = NA)
+          names(d2) <- c("p.value")
+          return(d2) # nolint
+        }
+      )
+      d2 <- dplyr::mutate(
+        d2,
+        "Name" = names(d1)[[y]],
+        "Comparison" = paste(
+          grpname[[1]],
+          grpname[[2]], sep = "-"
+        )
+      )
+      d2 <- d2[, c("Name", "Comparison", "p.value")]
+      d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+      return(d2) # nolint
+    }
+    if (Sys.info()[["sysname"]] != "Windows") {
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          parallel::mclapply(
+            mc.cores = ceiling(parallel::detectCores() / 4),
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- fun.test.in(y)
+              return(d2) # nolint
+            }
+          ),
+          names(d1)
+        )
+      )
+    }
+    if (Sys.info()[["sysname"]] == "Windows") {
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- fun.test.in(y)
+              return(d2) # nolint
+            }
+          ),
+          names(d1)
+        )
+      )
+    }
+    d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    return(d_mult) # nolint
+  }
+  fun.stat.ttest <- function() { # nolint
+    fun.test.in <- function(y) { # nolint
+      d2 <- tryCatch(
+        {
+          g1 <- d1[grepl(grpname[[1]], md1[[md_var1]]), ][[y]]
+          g2 <- d1[grepl(grpname[[2]], md1[[md_var1]]), ][[y]]
+          d2 <- setNames(
+            as.data.frame(
+              t.test(g1, g2)[["p.value"]]
+            ),
+            "p.value"
+          )
+        },
+        error = function(e) {
+          print("Wilcox Test failed for selected comparison...")
+          d2 <- data.frame("p.value" = NA)
+          names(d2) <- c("p.value")
+          return(d2) # nolint
+        }
+      )
+      d2 <- dplyr::mutate(
+        d2,
+        "Name" = names(d1)[[y]],
+        "Comparison" = paste(
+          grpname[[1]],
+          grpname[[2]], sep = "-"
+        )
+      )
+      d2 <- d2[, c("Name", "Comparison", "p.value")]
+      d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
+      return(d2) # nolint
+    }
+    if (Sys.info()[["sysname"]] != "Windows") {
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          parallel::mclapply(
+            mc.cores = ceiling(parallel::detectCores() / 4),
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- fun.test.in(y)
+              return(d2) # nolint
+            }
+          ),
+          names(d1)
+        )
+      )
+    }
+    if (Sys.info()[["sysname"]] == "Windows") {
+      d_mult <- dplyr::bind_rows(
+        setNames(
+          lapply(
+            seq.int(1, ncol(d1), 1),
+            function(y) {
+              d2 <- fun.test.in(y)
+              return(d2) # nolint
+            }
+          ),
+          names(d1)
+        )
+      )
+    }
+    d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
+    return(d_mult) # nolint
+  }
+  # Combine results with fold change
   fun.format.res <- function() { # nolint
     # Fix anova comparisons to match fold change comparisons
     dm_fix <- data.frame(
@@ -237,15 +375,15 @@ ms_stat_uni <- function( # nolint
   }
   #---- Data precheck ----
   print("Normality Check:")
-  fun.check.norm()
+  d1_check <- fun.check.norm()
   #---- One-way ANOVA: Standard ----
   if (fc_method == "standard") {
-    print("Running standard one-way ANOVA...")
+    print("Running standard statistical analysis...")
     d1 <- setNames(d1, an1[[cn1]])
   }
   #---- One-way ANOVA: Class ----
   if (fc_method == "class") {
-    print("Running class-based one-way ANOVA...")
+    print("Running class-based statistical analysis...")
     d1 <- aggregate(
       t(as.matrix(d1)),
       list(an1[[cc1]]),
@@ -255,7 +393,7 @@ ms_stat_uni <- function( # nolint
   }
   #---- One-way ANOVA: HiVE----
   if (fc_method == "HiVE") {
-    print("Running HiVE-based one-way ANOVA...")
+    print("Running HiVE-based statistical analysis...")
     d1 <- aggregate(
       t(as.matrix(d1)),
       list(an1[[cc1]]),
@@ -309,7 +447,26 @@ ms_stat_uni <- function( # nolint
     d1 <- dplyr::bind_cols(rat2[lengths(rat2) > 1])
   }
   #---- Run test and combine with fold change ----
-  d_mult <- fun.stat.anova()
+  if (is.null(name_group)) {
+    d_mult <- fun.stat.anova()
+  }
+  if (!is.null(name_group)) {
+    print("Group name specified; run statistical test with two groups...")
+    if (
+      (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
+        nrow(d1_check) < 0.5
+    ) {
+      print("Most compound intensities are not normally distributed; Running wilcox rank sum test...") # nolint
+      d_mult <- fun.stat.wilcox()
+    }
+    if (
+      (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
+        nrow(d1_check) > 0.5
+    ) {
+      print("Most compound intensities are normally distributed; Running T-test...") # nolint
+      d_mult <- fun.stat.ttest()
+    }
+  }
   fold_all <- ms_stat_fc( # nolint
     exp1 = exp1,
     asy = asy,
@@ -320,339 +477,6 @@ ms_stat_uni <- function( # nolint
   )
   print("Combining results...")
   d_out <- fun.format.res()
-  print("One-way ANOVA complete!")
-  return(d_out)
-}
-
-#' T-test/Wilcox Rank Sum Test
-#'
-#' Conducts either Student's T-test or Wilcox Rank Sum Test
-#' for selected variable, depending on data distribution,
-#' and combines with fold changes for the selected comparison.
-#'
-#' @param matpv Data matrix for conducting ANOVA.
-#' @param matfc Data matrix for calculating fold change.
-#' @param matfc_type Input data type for calculating fold change;
-#' either "norm" or "scaled."
-#' @param md Metadata from ms_input().
-#' @param md_var Metadata variables to test by ANOVA.
-#' @param an Reference annotation data frame.
-#' @param grp1 Treatment group "A" name for test input.
-#' @param grp2 Treatment group "B" name.
-#' @param sid Sample ID column for filtering input data matrix.
-#' @return A data frame containing the combined stats and fold change results
-#' for the specified variable.
-#' @examples
-#'
-#' # ms_stat_univ(
-#' #   matpv = lstat[["data"]],
-#' #   matfc = lstat[["data"]],
-#' #   md = lstat[["meta"]],
-#' #   grp1 = "Group1",
-#' #   grp2 = "Group2"
-#' # )
-#'
-#' @export
-ms_stat_univ <- function( # nolint
-  matpv,
-  matfc,
-  matfc_type = "norm",
-  md,
-  md_var = "Group",
-  an = NULL,
-  grp1,
-  grp2,
-  sid = "SampleID"
-) { # nolint
-  # Load data
-  d1 <- matpv
-  md1 <- md
-  if(is.null(an)) { # nolint
-    an1 <- data.frame("Name" = names(d1))
-  }
-  if(!is.null(an)) { # nolint
-    an1 <- an
-  }
-  # Check for normality
-  d1_check <- as.data.frame(
-    apply(
-      as.matrix(d1),
-      2,
-      function(x) {
-        tryCatch(
-          {
-            mvnormtest::mshapiro.test(t(as.matrix(x)))[[2]]
-          },
-          error = function(e) {
-            print(
-              "Normality test unsuccessful; NAs likely present in input data" # nolint
-            )
-          }
-        )
-      }
-    )
-  )
-  print(
-    paste(
-      length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ]),
-      "of",
-      nrow(d1_check),
-      "compounds have normally distributed intensities."
-    )
-  )
-  if( # nolint
-    (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
-      nrow(d1_check) < 0.9
-  ) {
-    if(Sys.info()[["sysname"]] != "Windows") { # nolint
-      # Wilcox Rank Sum
-      d_mult <- dplyr::bind_rows(
-        setNames(
-          parallel::mclapply(
-            mc.cores = ceiling(parallel::detectCores() * 0.75),
-            seq.int(1, ncol(d1), 1),
-            function(y) {
-              d2 <- tryCatch(
-                {
-                  g1 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp1, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  g2 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp2, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  d2 <- setNames(
-                    as.data.frame(
-                      wilcox.test(g1, g2)[["p.value"]]
-                    ),
-                    "p.value"
-                  )
-                },
-                error = function(e) {
-                  print("Wilcox Test failed for selected comparison...")
-                  d2 <- data.frame("p.value" = NA)
-                  names(d2) <- c("p.value")
-                  return(d2) # nolint
-                }
-              )
-              d2 <- dplyr::mutate(
-                d2,
-                "Name" = an1[["Name"]][[y]],
-                "Comparison" = paste(grp1, grp2, sep = "-")
-              )
-              d2 <- d2[, c("Name", "Comparison", "p.value")]
-              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
-              return(d2) # nolint
-            }
-          ),
-          an1[["Name"]]
-        )
-      )
-      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
-    }
-    if(Sys.info()[["sysname"]] == "Windows") { # nolint
-      # Wilcox Rank Sum
-      d_mult <- dplyr::bind_rows(
-        setNames(
-          lapply(
-            seq.int(1, ncol(d1), 1),
-            function(y) {
-              d2 <- tryCatch(
-                {
-                  g1 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp1, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  g2 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp2, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  d2 <- setNames(
-                    as.data.frame(
-                      wilcox.test(g1, g2)[["p.value"]]
-                    ),
-                    "p.value"
-                  )
-                },
-                error = function(e) {
-                  print("Wilcox Test failed for selected comparison...")
-                  d2 <- data.frame("p.value" = NA)
-                  names(d2) <- c("p.value")
-                  return(d2) # nolint
-                }
-              )
-              d2 <- dplyr::mutate(
-                d2,
-                "Name" = an1[["Name"]][[y]],
-                "Comparison" = paste(grp1, grp2, sep = "-")
-              )
-              d2 <- d2[, c("Name", "Comparison", "p.value")]
-              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
-              return(d2) # nolint
-            }
-          ),
-          an1[["Name"]]
-        )
-      )
-      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
-    }
-  }
-  if( # nolint
-    (length(d1_check[d1_check[[1]] > (0.05 / nrow(d1_check)), ])) /
-      nrow(d1_check) > 0.9
-  ) {
-    if(Sys.info()[["sysname"]] != "Windows") { # nolint
-      # T-test
-      d_mult <- dplyr::bind_rows(
-        setNames(
-          parallel::mclapply(
-            mc.cores = ceiling(parallel::detectCores() * 0.75),
-            seq.int(1, ncol(d1), 1),
-            function(y) {
-              d2 <- tryCatch(
-                {
-                  g1 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp1, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  g2 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp2, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  d2 <- setNames(
-                    as.data.frame(
-                      t.test(g1, g2)[["p.value"]]
-                    ),
-                    "p.value"
-                  )
-                },
-                error = function(e) {
-                  print("Welsh's T-Test failed for selected comparison...")
-                  d2 <- data.frame("p.value" = NA)
-                  names(d2) <- c("p.value")
-                  return(d2) # nolint
-                }
-              )
-              d2 <- dplyr::mutate(
-                d2,
-                "Name" = an1[["Name"]][[y]],
-                "Comparison" = paste(grp1, grp2, sep = "-")
-              )
-              d2 <- d2[, c("Name", "Comparison", "p.value")]
-              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
-              return(d2) # nolint
-            }
-          ),
-          an1[["Name"]]
-        )
-      )
-      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
-    }
-    if(Sys.info()[["sysname"]] == "Windows") { # nolint
-      # T-test
-      d_mult <- dplyr::bind_rows(
-        setNames(
-          lapply(
-            seq.int(1, ncol(d1), 1),
-            function(y) {
-              d2 <- tryCatch(
-                {
-                  g1 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp1, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  g2 <- d1[
-                    rownames(d1) %in%
-                      md1[md1[["Group"]] == grp2, sid],
-                    an1[["Name"]][[y]]
-                  ]
-                  d2 <- setNames(
-                    as.data.frame(
-                      t.test(g1, g2)[["p.value"]]
-                    ),
-                    "p.value"
-                  )
-                },
-                error = function(e) {
-                  print("Welsh's T-Test failed for selected comparison...")
-                  d2 <- data.frame("p.value" = NA)
-                  names(d2) <- c("p.value")
-                  return(d2) # nolint
-                }
-              )
-              d2 <- dplyr::mutate(
-                d2,
-                "Name" = an1[["Name"]][[y]],
-                "Comparison" = paste(grp1, grp2, sep = "-")
-              )
-              d2 <- d2[, c("Name", "Comparison", "p.value")]
-              d2[["FDR"]] <- p.adjust(d2[["p.value"]], method = "fdr")
-              return(d2) # nolint
-            }
-          ),
-          an1[["Name"]]
-        )
-      )
-      d_mult <- d_mult[d_mult[["Comparison"]] != "1", ]
-    }
-  }
-  # Add fold change
-  if(matfc_type == "norm") { # nolint
-    fold_all <- ms_stat_fc( # nolint
-      mat1 = matfc,
-      mat_type = "norm",
-      md = md1,
-      md_var = md_var,
-      an = an1
-    )
-  }
-  if(matfc_type == "scaled") { # nolint
-    fold_all <- ms_stat_fc( # nolint
-      mat1 = matfc,
-      mat_type = "scaled",
-      md = md1,
-      md_var = md_var,
-      an = an1
-    )
-  }
-  # Fix comparisons to match fold change comparisons
-  dm_fix <- data.frame(
-    "Comparison" = unique(d_mult[["Comparison"]]),
-    "Comparison.fc" = unlist(
-      lapply(
-        seq.int(1, length(unique(d_mult[["Comparison"]])), 1),
-        function(x) {
-          fx1 <- unique(d_mult[["Comparison"]])[[x]]
-          fx2 <- ifelse(
-            fx1 %in% unique(fold_all[["Comparison.fc"]]) == FALSE,
-            paste(
-              unlist(strsplit(fx1, "-"))[[2]],
-              unlist(strsplit(fx1, "-"))[[1]],
-              sep = "-"
-            ),
-            fx1
-          )
-          return(fx2) # nolint
-        }
-      )
-    )
-  )
-  d_out <- dplyr::left_join(
-    dplyr::left_join(
-      d_mult,
-      dm_fix,
-      by = "Comparison"
-    ),
-    fold_all,
-    by = c("Comparison.fc", "Name")
-  )
+  print("Statistical analysis complete!")
   return(d_out)
 }
