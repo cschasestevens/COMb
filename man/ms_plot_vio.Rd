@@ -2,26 +2,49 @@
 % Please edit documentation in R/10visualize.R
 \name{ms_plot_vio}
 \alias{ms_plot_vio}
-\title{Violin Plot}
+\title{Violin/Box Plot}
 \usage{
 ms_plot_vio(
-  df1,
-  xvar,
-  yvar,
-  clvar = "Group",
-  plab = "nM / ng per million cells"
+  exp1,
+  asy = "norm",
+  ptype = "vio",
+  var_x = "Region",
+  var_c = "Label",
+  var_cl = "Group",
+  var_sum = NULL,
+  var_id = NULL,
+  comp,
+  plab = "Relative Abundance",
+  title1 = NULL,
+  show_jitter = FALSE
 )
 }
 \arguments{
-\item{df1}{Input data frame.}
+\item{exp1}{SummarizedExperiment object.}
 
-\item{xvar}{X-axis variable.}
+\item{asy}{Assay to use for plotting.}
 
-\item{yvar}{Y-axis variable.}
+\item{ptype}{Plot type (either "vio" or "box")}
 
-\item{clvar}{Group variable.}
+\item{var_x}{X-axis variable name from colData.}
 
-\item{plab}{Plot y-axis label.}
+\item{var_c}{Variable containing compound names.}
+
+\item{var_cl}{Group variable name from colData.}
+
+\item{var_sum}{Variable name for summarizing
+compound information (optional).}
+
+\item{var_id}{Sample ID variable name; only
+required if var_sum is provided.}
+
+\item{comp}{Compound name to plot.}
+
+\item{plab}{Y-axis label.}
+
+\item{title1}{Plot title.}
+
+\item{show_jitter}{Show individual data points on the plot?}
 }
 \value{
 A violin plot for the chosen treatment comparisons.
@@ -31,10 +54,9 @@ Generates a violin plot from an input data frame.
 }
 \examples{
 
-# ms_plot_violin(
-#   df1 = dox,
-#   xvar = "rt",
-#   yvar = "mz"
+# ms_plot_vio(
+#   exp1 = data2,
+#   comp = "Compound1"
 # )
 
 }

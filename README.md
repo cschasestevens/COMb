@@ -1,9 +1,11 @@
-# COMb v2.01 (20260326)
+# COMb v2.02 (20260327)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
 
-Utilizes various R packages to perform processing and analysis of untargeted and targeted metabolomics/lipidomics datasets.    The methods included in this package provide a standardized workflow for data processing, statistical methods, and visualization of metabolomics data.    Most analyses can be run in parallel to expedite computationally heavy analyses.    The package is compatible with all operating systems. However, parallel processing is only available on Mac and Linux OS.
+Utilizes various R packages to perform processing and analysis of untargeted metabolomics/lipidomics datasets.    The methods included in this package provide a standardized workflow for data processing, statistical methods, and visualization of metabolomics data.    Most analyses can be run in parallel to expedite lengthy analyses.    The package is compatible with all operating systems. However, parallel processing is only available on Mac and Linux operating systems.
+
+The HiVE package (https://github.com/cschasestevens/HiVE) extends the plotting capabilities of COMb by enabling generation of detailed lipid network plots for multimodal lipid analysis, including lipidomics and transcriptomics data. See the HiVE package documentation for more information.
 
 ## Getting Started
 
@@ -14,29 +16,35 @@ Utilizes various R packages to perform processing and analysis of untargeted and
 * (Optional) Conda installation of Python 3.9 and umap-learn (Only used for implementing UMAP via Python)
 * R-packages (downloaded from CRAN or Bioconductor):
     * Suggests: 
-        * knitr,
-        * rmarkdown,
         * reticulate,
-        * BiocManager
+        * BiocManager,
+        * rmarkdown,
+        * parallel,
+        * DescTools,
+        * ggpmisc,
+        * plotly,
+        * HiVE,
+        * ggnewscale,
+        * ggrepel,
+        * knitr
     * Imports: 
-        * dplyr,
-        * ggplot2,
         * ggsci,
         * viridis,
-        * readxl,
+        * RColorBrewer,
+        * ggplot2,
+        * dplyr,
         * ggpubr,
-        * shadowtext,
-        * parallel,
-        * reshape2,
-        * ggrepel,
-        * mvnormtest,
-        * grid,
-        * EnhancedVolcano,
+        * gtools,
         * circlize,
         * ComplexHeatmap,
-        * ggpmisc,
-        * DescTools,
-        * SummarizedExperiment
+        * grid,
+        * readxl,
+        * SummarizedExperiment,
+        * magrittr,
+        * reshape2,
+        * umap,
+        * mvnormtest,
+        * EnhancedVolcano
 
 ### Installation
 * Run the following in a new R session on the command line or within R-Studio:
@@ -71,8 +79,15 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.02
+    * Added package tutorial.
+    * Updated package documentation.
+    * Fixed error in ms_plot_crich to reflect new plot theme.
+    * Added ms_create_exp function, which converts Excel files containing feature data, sample data, and a data matrix into a SummarizedExperiment for use with COMb functions.
+    * Updated function documentation.
 * 2.01
     * Updated documentation for all functions.
+    * ms_plot_hm has replaced ms_plot_heat, which is now deprecated.
     * ms_stat_crich updated to allow more flexibility for reference dataset inputs.
     * Integrated wilcox/t-test into ms_stat_uni (ms_stat_univ is now deprecated).
 * 2.00b

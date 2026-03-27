@@ -5,52 +5,43 @@
 \title{Group-wise Fold Change Function}
 \usage{
 ms_stat_fc(
-  mat1,
+  exp1,
+  asy = "norm",
   mat_type = "norm",
-  md,
-  md_var,
-  an = NULL,
-  fc_class = FALSE,
-  grp_class = NULL,
-  lipid_fc = FALSE,
+  col_grp = "Group",
+  col_class = "Class",
+  col_lab = "Label",
+  fc_method = "standard",
   comp_grp = TRUE
 )
 }
 \arguments{
-\item{mat1}{Data matrix assigned by ms_input().}
+\item{exp1}{A SummarizedExperiment.}
+
+\item{asy}{Assay to use for fold change calculation.}
 
 \item{mat_type}{Input data type, either "norm" or "scaled." If
 "scaled," fold changes are calculated as the difference between
 two group averages rather than by dividing normalized compound
 average intensities per group.}
 
-\item{md}{Dataframe containing study metadata.}
+\item{col_grp}{Vector of metadata variables for splitting data.}
 
-\item{md_var}{Vector of metadata variables to calculate fold
-changes for.}
+\item{col_class}{Compound class variable name; only required if
+fc_method is "class" or "HiVE".}
 
-\item{an}{Dataframe containing annotation metadata.}
+\item{col_lab}{Compound name column.}
 
-\item{fc_class}{Logical indicating whether class-wide
-fold changes should be calculated. Requires a valid
-annotation list contained within ms_input() result.}
+\item{fc_method}{Fold change calculation mode; either "standard",
+which is the most common, "class", or "HiVE"}
 
-\item{grp_class}{Name of the class annotation column
-to use. Ignored when fc_class is set to FALSE.}
-
-\item{lipid_fc}{(Lipidomics Only) Logical indicating
-whether related lipid class fold changes should be calculated.
-If TRUE, calculates lipid class averages and calculates related class
-ratios prior to treatment group comparisons. Class comparisons are
-calculated based on the HiVE package.}
-
-\item{comp_grp}{Only applicable if lipid_fc is TRUE; Should treatment
-group fold changes be calculated? If FALSE, returns lipid class ratios
-without aggregating and comparing by treatment group.}
+\item{comp_grp}{Only applicable if fc_method is "HiVE"; Should
+group fold changes be calculated? If FALSE, returns ratios
+without aggregation by treatment group.}
 }
 \value{
 A data frame containing the group-wise
-fold changes for each compound.
+fold changes for each compound or class.
 }
 \description{
 Calculates the log2 fold changes for all
@@ -58,13 +49,6 @@ possible combinations of selected metadata variables.
 }
 \examples{
 
-# ms_stat_fc(
-#   mat1 = d[["data"]][["imputed"]],
-#   md = d[["data"]][["meta"]],
-#   md_var = c("Organ", "Sex", "Dose"),
-#   an = d[["data"]][["anno"]],
-#   fc_class = TRUE,
-#   grp_class = "Subclass"
-# )
+# ms_stat_fc(exp1 = data2)
 
 }

@@ -1,11 +1,11 @@
 Package: COMb
-Date: 2026-03-25
+Date: 2026-03-27
 Type: Package
 Title: Comprehensive Observation/analysis of Metabolomics data (COMb)
-Version: 2.00b
+Version: 2.02
 Author: Nathanial C. Stevens
 Maintainer: Nathanial C. Stevens <cschasestevens@gmail.com>
-Description: Utilizes various R packages to perform processing and analysis of untargeted and targeted metabolomics/lipidomics datasets.    The methods included in this package provide a standardized workflow for data processing, statistical methods, and visualization of metabolomics data.    Most analyses can be run in parallel to expedite computationally heavy analyses.    The package is compatible with all operating systems. However, parallel processing is only available on Mac and Linux OS.
+Description: Utilizes various R packages to perform processing and analysis of untargeted metabolomics/lipidomics datasets.    The methods included in this package provide a standardized workflow for data processing, statistical methods, and visualization of metabolomics data.    Most analyses can be run in parallel to expedite lengthy analyses.    The package is compatible with all operating systems. However, parallel processing is only available on Mac and Linux operating systems.
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -13,31 +13,35 @@ RoxygenNote: 7.3.3
 Suggests:
     reticulate,
     BiocManager,
-    rmarkdown
+    rmarkdown,
+    parallel,
+    DescTools,
+    ggpmisc,
+    plotly,
+    HiVE,
+    ggnewscale,
+    ggrepel,
+    knitr,
+    htmlwidgets
 biocViews:
 Imports:
-  knitr,
-  magrittr,
-  RColorBrewer,
-  stringr,
-  dplyr,
-  ggplot2,
   ggsci,
   viridis,
-  readxl,
+  RColorBrewer,
+  ggplot2,
+  dplyr,
   ggpubr,
-  shadowtext,
-  parallel,
-  reshape2,
-  ggrepel,
-  mvnormtest,
-  grid,
-  EnhancedVolcano,
+  gtools,
   circlize,
   ComplexHeatmap,
-  ggpmisc,
-  DescTools,
-  SummarizedExperiment
+  grid,
+  readxl,
+  SummarizedExperiment,
+  magrittr,
+  reshape2,
+  umap,
+  mvnormtest,
+  EnhancedVolcano
 VignetteBuilder: knitr
 Depends: 
     R (>= 4.5.0)

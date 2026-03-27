@@ -11,14 +11,15 @@
 #' Note that only "standard" ms_stat_uni inputs are supported as
 #' "class" and "HiVE" inputs already contain results aggregated by class.
 #' @param d_ref Data frame to use for assigning annotation classes.
-#' @param cl_name Variable name to use for assigning classes and grouping
+#' @param col_class Variable name to use for assigning classes and grouping
 #' for enrichment analysis.
+#' @param col_lab Compound name column.
+#' @param col_pvalue P-value column name in the input statistical results.
 #' @return A ChemRICH results data frame.
 #' @examples
 #' # ms_stat_crich(
 #' #   d_stat = data2,
-#' #   d_ref = df1,
-#' #   cl_name = "label.saturation"
+#' #   d_ref = df1
 #' # )
 #'
 #' @export
@@ -239,97 +240,4 @@ ms_stat_crich <- function(
   }
   cr_out <- fun.run.chemrich()
   return(cr_out) # nolint
-}
-
-#' Plot ChemRICH Results
-#'
-#' Plots ChemRICH results for selected comparison as a dot plot.
-#'
-#' @param dfcr An individual comparison from a ChemRICH results data frame.
-#' @return A dot plot displaying ChemRICH results,
-#' including cluster size, increased/decreased proportion,
-#' and statistical significance.
-#' @examples
-#' # ms_plot_crich(
-#' #   dfcr = chemrichdf
-#' # )
-#'
-#' @export
-ms_plot_crich <- function(
-  dfcr
-) {
-  df <- dfcr
-  # Main Plot
-  cr_plot <- ggplot2::ggplot(
-    df,
-    ggplot2::aes(
-      x = df[[4]], # nolint
-      y = -log10(FDR), # nolint
-      fill = Ratio # nolint
-    )
-  ) +
-    ## Connect lines to significantly altered clusters
-    ggplot2::geom_linerange(
-      data = df[df[["FDR"]] < 0.05, ],
-      ggplot2::aes(
-        x = df[df[["FDR"]] < 0.05, 4],
-        ymax = -log10(df[df[["FDR"]] < 0.05, "FDR"]),
-        ymin = 0
-      ),
-      color = "black"
-    ) +
-    ## Plot points
-    ggplot2::geom_point(
-      shape = 21,
-      col = "black",
-      ggplot2::aes(
-        size = .data[["n"]] # nolint
-      ),
-      alpha = ifelse(
-        df[["FDR"]] < 0.05,
-        1,
-        0.5
-      )
-    ) +
-    ## Significance line
-    ggplot2::geom_hline(
-      yintercept = 1.3,
-      linetype = "dashed",
-      color = col_univ()[[1]] # nolint
-    ) +
-    ## Theme
-    ms_theme1() + # nolint
-    ggplot2::theme(plot.margin = grid::unit(
-      c(1, 4, 1, 4),
-      "cm"
-    )) +
-    ## Axis labels
-    ggplot2::xlab("Class") +
-    ggplot2::ylab("-log10(adjusted p-value)") +
-    ## Gradient and size scaling
-    ggplot2::scale_fill_gradientn(
-      name = "Increased Ratio",
-      colors = c(
-        "midnightblue",
-        "royalblue2",
-        "white",
-        "goldenrod1",
-        "firebrick3"
-      ),
-      breaks = c(
-        0, .25, .5, .75, 1
-      ),
-      labels = c(
-        "100% Decreased",
-        "25% Increased:75% Decreased",
-        "50% Increased:50% Decreased",
-        "75% Increased:25% Decreased",
-        "100% Increased"
-      )
-    ) +
-    ggplot2::scale_size_area(
-      name = "Cluster Size",
-      max_size = 16
-    )
-  return(cr_plot) # nolint
 }

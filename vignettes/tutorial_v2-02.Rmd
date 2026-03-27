@@ -1,0 +1,480 @@
+---
+title: "tutorial_v2-02"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{tutorial_v2-02}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# **COMb Tutorial v2.02**
+
+## **Contents:**
+## 1. Setup
+### 1.1. Setup environment
+
+## 2. Data Processing and Curation
+### 2.1. Data Preprocessing
+### 2.2. Postprocessing of Curated Lipidomics Data
+### 2.3. Data Normalization
+### 2.4. Quality Control
+
+## 3. Statistical Analysis
+### 3.1. Violin/Box plots for each compound class per group
+#### 3.1.1. Lipidomics
+### 3.2. Fold Change
+### 3.3. Dimension Reduction
+### 3.4. Statistical Tests (Univariate/Multivariate)
+
+## 4. Visualization of Statistical Results
+### 4.1. Volcano Plots
+### 4.2. Heatmaps
+
+
+## **Scripts:**
+## 1. Analysis Setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  dpi = 500,
+  fig.width = 7
+)
+```
+### 1.1. Define Parameters and Upload Data
+```{r setup1, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Check if libraries are installed
+## HiVE
+if ("HiVE" %in% unique(installed.packages()[, 1]) == FALSE) {
+  devtools::install_github("cschasestevens/HiVE",
+    ref = "main",
+    build_vignettes = TRUE
+  )
+}
+# Load libraries
+library(COMb)
+library(HiVE)
+library(SummarizedExperiment)
+library(dplyr)
+# Set working directory
+getwd()
+setwd("/path/to/project/directory")
+```
+
+## 2. Data Processing, Curation, and Normalization
+### 2.1. Data Preprocessing
+```{r proc1, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Preprocess alignment file exported from MS-DIAL
+## Compatible with both ionization modes
+data_pos <- ms_preproc(
+  dat = "name_of_alignment_file",
+  ref1 = "ref/sample_list.csv",
+  ref2 = "ref/pos_mzrt_list.txt"
+)
+data_neg <- ms_preproc(
+  dat = "name_of_alignment_file",
+  ref1 = "ref/sample_list.csv",
+  ref2 = "ref/pos_mzrt_list.txt",
+  ionmode = "neg"
+)
+# Save outputs
+## Preprocessed RDS
+saveRDS(data_pos, "data/02preprocessing/preprocessed_pos.rds")
+saveRDS(data_neg, "data/02preprocessing/preprocessed_neg.rds")
+## Output feature list for data curation
+write.table(
+  data_pos[["data_preproc_feat"]],
+  "preprocessed_pos_curate.txt",
+  sep = "\t",
+  row.names = FALSE
+)
+write.table(
+  data_neg[["data_preproc_feat"]],
+  "preprocessed_neg_curate.txt",
+  sep = "\t",
+  row.names = FALSE
+)
+```
+
+### 2.2. Postprocessing of Curated Lipidomics Data
+```{r proc2, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Postprocessing of curated lipidomics data
+## Combines adducts and filters data based on final feature list
+## Converts data into a SummarizedExperiment for normalization,
+## dimension reduction, etc.
+# Leave metadata column names unchanged if
+# subsequently running ms_qc and ms_qc_report!!!
+data1 <- ms_postproc(
+  dat = "path/to/curated/data_file.csv",
+  dat_in = c(
+    "data/02preprocessing/preprocessed_pos.rds",
+    "data/02preprocessing/preprocessed_neg.rds"
+  ),
+  add_metadata = list(
+    "Study name" = "Study name",
+    "Author" = "Your name",
+    "Analysis Platform" = "Q-Exactive HFX",
+    "Analysis Date" = "2025-08-19",
+    "Data processing" = "MS-DIAL 4.9.221218/LCB and COMb v2.00",
+    "Feature column name" = "Label",
+    "Class column name" = "Class",
+    "Group column name" = "Group",
+    "Acquisition order column name" = "Order",
+    "Sample column name" = "File type",
+    "Blank sample name" = "Blank",
+    "QC sample name" = "QC",
+    "Internal standard prefix" = "iSTD",
+    "Batch column name" = "IDMX",
+    "Sample ID column name" = "Label"
+  )
+)
+```
+
+### 2.3. Data Normalization
+```{r proc3, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Load existing SummarizedExperiment from ms_postproc or upload Excel file
+# containing data matrix, compound metadata, and sample metadata
+## If loading data from Excel sheet:
+data1 <- ms_create_exp(
+  file_data = "data/data_sheet.xlsx",
+  file_md = "data/study_metadata.xlsx",
+  md_no_feat = 29,
+  md_no_samp = 7
+)
+colnames(data1) <- colData(data1)[["SampleID"]]
+rownames(data1) <- rowData(data1)[["Name"]]
+assay(data1, "norm") <- assay(data1, "format")
+# Internal standard normalization
+## Need to have specific metadata columns
+## listed in 2.2. to work successfully
+# 1. Split data by ionization mode
+# 2. Split data by region
+# 3. Normalize data
+data1 <- ms_data_norm(data1)
+```
+
+### 2.4. Quality Control
+```{r proc4, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Run QC function
+qcdata <- ms_qc(data1)
+# Generate report
+ms_qc_report(
+  data_qc = qcdata,
+  study_name = "Study name",
+  author = "Author",
+  an_plat = "Analysis Platform",
+  an_date = "Analysis Date",
+  meth_dp = "Data processing",
+  meth_nm = "Normalization method",
+  outdir = "qc/",
+  outname = "lsae_lipidomics"
+)
+# Remove qc files from tempdir
+file.remove(
+  list.files(tempdir(), full.names = TRUE)[
+    grepl(
+      "heat01|dist01|dimr01|sign01|heat02",
+      list.files(tempdir(), full.names = TRUE)
+    )
+  ]
+)
+# Save data and qcdata as RDS
+saveRDS(data1, "data/20260320_data_lipidomics.rds")
+## If split into multiple batches
+saveRDS(qcdata[["transformed data"]], "data/20260320_data_lipidomics_split.rds") # nolint
+```
+
+## 3. Statistical Analysis
+### 3.1. Violin/Box plots for each compound class per group
+#### 3.1.1. Lipidomics
+```{r statsums01, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Filter qcs from data and
+# Sort by class, saturation, and chain length
+data2 <- data1[
+  order(
+    rowData(data1)[["Class"]],
+    rowData(data1)[["Saturation"]],
+    rowData(data1)[["Chain"]]
+  ),
+  !grepl("Blank|Pool|U", colData(data1)[["Group"]])
+]
+# Remove internal standards from feature list
+data2 <- data2[!grepl("iSTD", rowData(data2)[["Label"]]), ]
+# Change NAs in saturation and class to "not specified"
+rowData(data2)[["Saturation"]][
+  is.na(rowData(data2)[["Saturation"]])
+] <- "not specified"
+rowData(data2)[["Chain"]][
+  is.na(rowData(data2)[["Chain"]])
+] <- "not specified"
+# Add log2 transformed and pareto-scaled assays to object
+## Log2
+assay(data2, "log2") <- log2(assay(data2, "norm"))
+## Pareto
+assay(data2, "scaled") <- apply(
+  apply(
+    assay(data2, "log2"),
+    2,
+    function(x) x - mean(x)
+  ),
+  2,
+  function(y) round(y / sqrt(sd(y)), digits = 3)
+)
+#---- Plots for each class ----
+## Create list for each class and plot as panel
+lapply(
+  unique(rowData(data2)[["Class"]]),
+  function(i) {
+    # filter data
+    ld1 <- data2[rowData(data2)[["Class"]] == i, ]
+    sub1 <- ceiling(nrow(ld1) / 20)
+    if (sub1 == 1) {
+      p1 <- ggpubr::ggarrange(
+        plotlist = lapply(
+          rowData(ld1)[["Label"]],
+          function(j) {
+            ms_plot_vio(ld1, comp = j, title1 = j, ptype = "box")
+          }
+        ),
+        ncol = ifelse(nrow(ld1) <= 5, nrow(ld1), 5),
+        nrow = ifelse(nrow(ld1) <= 5, 1, ceiling(nrow(ld1) / 5)),
+        common.legend = TRUE
+      )
+      ggplot2::ggsave(
+        paste("path/to/directory/lipidomics_", i, ".png", sep = ""), # nolint
+        p1, width = 30, height = 20, dpi = 300
+      )
+    }
+    if (sub1 > 1) {
+      p1 <- setNames(lapply(
+        seq.int(1, sub1, 1),
+        function(h) {
+          p2 <- rowData(ld1)[["Label"]][
+            (1 + 20 * (h - 1)):ifelse(
+              (20 * (h - 1)) + 20 > length(rowData(ld1)[["Label"]]),
+              length(rowData(ld1)[["Label"]]),
+              (20 * (h - 1)) + 20
+            )
+          ]
+          p2 <- ggpubr::ggarrange(
+            plotlist = lapply(
+              p2,
+              function(j) {
+                ms_plot_vio(ld1, comp = j, title1 = j, ptype = "box")
+              }
+            ),
+            ncol = ifelse(length(p2) <= 5, length(p2), 5),
+            nrow = ifelse(length(p2) <= 5, 1, ceiling(length(p2) / 5)),
+            common.legend = TRUE
+          )
+        }
+      ), as.character(seq.int(1, sub1, 1)))
+      lapply(
+        seq.int(1, length(p1), 1),
+        function(k) {
+          ggplot2::ggsave(
+            paste(
+              "path/to/directory/lipidomics_", i,
+              "_", names(p1)[[k]], ".png", sep = ""
+            ),
+            p1[[k]], width = 30, height = 20, dpi = 300
+          )
+        }
+      )
+    }
+  }
+)
+# Save RDS containing filtered data
+saveRDS(data2, "data/20260325_data_lipidomics_filtered.rds")
+```
+
+### 3.2. Fold Change
+```{r fold, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Calculate fold changes for each compound, class, or lipid class ratio
+datafc <- list(
+  "standard" = ms_stat_fc(
+    exp1 = data2, col_grp = c("Group", "Region")
+  ),
+  "class" = ms_stat_fc(
+    exp1 = data2, col_grp = c("Group", "Region"), fc_method = "class"
+  ),
+  "HiVE" = ms_stat_fc(
+    exp1 = data2, col_grp = c("Group", "Region"), fc_method = "HiVE"
+  )
+)
+lapply(datafc, function(x) head(x))
+# Save
+lapply(
+  names(datafc),
+  function(x) {
+    write.table(
+      datafc[[x]],
+      paste(
+        "analyze/2026_analysis/table_fc_",
+        x, ".txt", sep = ""
+      ),
+      sep = "\t",
+      row.names = FALSE
+    )
+  }
+)
+```
+
+### 3.3. Dimension Reduction
+```{r dimrd, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+set.seed(1234)
+# plot PCA/UMAP
+ms_dim_rd(
+  data2,
+  asy = "scaled",
+  md_var = "Group"
+)
+```
+
+### 3.4. Statistical Tests (Univariate/Multivariate)
+```{r stat1, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Run stats for cells and wash
+## Univariate analysis: ANOVA
+stat1 <- ms_stat_uni(
+  data2,
+  asy = "scaled",
+  mat_type = "scaled",
+  fc_method = "standard"
+)
+## Univariate analysis: wilcox/t-test
+stat1 <- ms_stat_uni(
+  data2,
+  asy = "scaled",
+  mat_type = "scaled",
+  fc_method = "standard",
+  name_group = c("Group1", "Group2")
+)
+head(stat1)
+## Count significant compounds
+setNames(aggregate(
+  stat1[["p.value"]],
+  list(stat1[["Comparison.fc"]]),
+  function(y) {
+    d1 <- y < 0.05
+    d1 <- length(d1[d1 == TRUE])
+  }
+), c("Comparison", "no.significant"))
+## ChemRICH
+stat2 <- ms_stat_crich(
+  d_stat = stat1,
+  d_ref = as.data.frame(rowData(data4[["cells"]])),
+  col_pvalue = "p.value"
+)
+head(stat2)
+```
+
+## 4. Visualization of Statistical Results
+### 4.1. Volcano Plots
+```{r volp, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Plots (Volcano and Heatmap)
+### All (for comparisons with at least one significantly altered compound)
+lapply(
+  seq.int(1, length(unique(stat1[["Type"]])), 1),
+  function(x) {
+    lapply(
+      seq.int(1, length(unique(stat1[["Comparison"]])), 1),
+      function(y) {
+        tryCatch(
+          {
+            ggplot2::ggsave(
+              paste(
+                "analyze/volcano/plot_vol_",
+                unique(stat1[["Type"]])[[x]],
+                "_",
+                gsub("-", "_vs_", unique(stat1[["Comparison"]])[[y]]),
+                ".png",
+                sep = ""
+              ),
+              ms_plot_volcano(
+                d_stat = stat1[
+                  stat1[["Type"]] == unique(
+                    stat1[["Type"]]
+                  )[[x]] &
+                    stat1[["Comparison"]] == unique(
+                      stat1[["Comparison"]]
+                    )[[y]],
+                ],
+                p_col = "p adj",
+                f_lim = 6,
+                comp_name = unique(stat1[["Comparison"]])[[y]],
+                x_title = paste(
+                  "Increased in",
+                  strsplit(
+                    unique(stat1[["Comparison"]])[[y]], "-"
+                  )[[1]][[2]],
+                  "<----->",
+                  " Increased in",
+                  strsplit(
+                    unique(stat1[["Comparison"]])[[y]], "-"
+                  )[[1]][[1]],
+                  sep = " "
+                )
+              ),
+              width = 8,
+              height = 8,
+              dpi = 400
+            )
+          },
+          error = function(e) {
+            print(
+              paste(
+                "Error generating plot for",
+                unique(stat1[["Type"]])[[x]],
+                unique(stat1[["Comparison"]])[[y]]
+              )
+            )
+          }
+        )
+      }
+    )
+  }
+)
+```
+### 4.2. Heatmaps
+```{r heatp, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Heatmaps
+h_out <- ms_plot_hm(
+  stat_data = stat1,
+  h_h = 8,
+  h_w = 40,
+  cl_c = TRUE,
+  cl_r = TRUE
+)
+png(
+  "analyze/plot_heat.png",
+  width = 24,
+  height = 14,
+  units = "cm",
+  res = 1000
+)
+print(h_out)
+dev.off()
+```
+
+### 4.3. ChemRICH/HiVE Network Plots
+```{r netp, echo = TRUE, fig.align = "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
+# Plot standard ChemRICH plot
+ms_plot_crich(stat2)
+# Plot HiVE enrichment networks
+## Annotation only
+hive_anno(enr_obj = stat2)
+## Enrichment
+hive_enrch(enr_obj = stat2, col_sat = "Class")
+## Lipid ratio comparison
+### Add associated.ratio to stats object
+stat1 <- ms_stat_uni(
+  data2,
+  asy = "scaled",
+  mat_type = "scaled",
+  fc_method = "HiVE",
+  name_group = c("Group1", "Group2")
+)
+head(stat1)
+hive_flux(stat_obj = stat1, col_p = "p.value")
+```

@@ -12,6 +12,7 @@
 #' @param col_grp Vector of metadata variables for splitting data.
 #' @param col_class Compound class variable name; only required if
 #' fc_method is "class" or "HiVE".
+#' @param col_lab Compound name column.
 #' @param fc_method Fold change calculation mode; either "standard",
 #' which is the most common, "class", or "HiVE"
 #' @param comp_grp Only applicable if fc_method is "HiVE"; Should

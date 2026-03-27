@@ -13,6 +13,7 @@
 #' @param col_grp Grouping variables for testing.
 #' @param col_class Compound class variable name; only required if
 #' fc_method is "class" or "HiVE".
+#' @param col_lab Compound name column.
 #' @param fc_method Fold change calculation mode; either "standard",
 #' which is the most common, "class", or "HiVE".
 #' @param name_group If statistics comparing two groups is desired,
