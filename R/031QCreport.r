@@ -168,7 +168,6 @@ ms_qc <- function(
     length(unique(c(
       "Feature column name",
       "Group column name",
-      "Acquisition order column name",
       "Sample column name",
       "QC sample name",
       "Sample ID column name"
@@ -178,7 +177,6 @@ ms_qc <- function(
         unique(c(
           "Feature column name",
           "Group column name",
-          "Acquisition order column name",
           "Sample column name",
           "QC sample name",
           "Sample ID column name"
@@ -186,7 +184,7 @@ ms_qc <- function(
           names(metadata(qcdata))) == FALSE
       )
   ) {
-    print("Must include 'Feature column name', 'Group column name', 'Acquisition order column name', 'Sample column name', 'QC sample name', and 'Sample ID column name' in metadata to run data normalization!") # nolint
+    print("Must include 'Feature column name', 'Group column name' 'Sample column name', 'QC sample name', and 'Sample ID column name' in metadata to run data normalization!") # nolint
   }
   #---- Validate sample and feature data ----
   print("3. Validating information in sample and feature data")
@@ -194,11 +192,19 @@ ms_qc <- function(
   md1 <- list(
     "fc" = metadata(qcdata)[["Feature column name"]], # nolint
     "gc" = metadata(qcdata)[["Group column name"]], # nolint
-    "ac" = metadata(qcdata)[["Acquisition order column name"]], # nolint
     "sc" = metadata(qcdata)[["Sample column name"]], # nolint
     "qc" = metadata(qcdata)[["QC sample name"]], # nolint
     "sid" = metadata(qcdata)[["Sample ID column name"]] # nolint
   )
+  if ("Acquisition order column name" %in% names(metadata(qcdata)) == FALSE) { # nolint
+    print("Acquisition order column name not present in metadata; initializing metadata column for report...") # nolint
+    md1 <- c(md1, "ac" = "Order") # nolint
+    colData(qcdata)[["Order"]] <- seq.int(1, ncol(qcdata), 1) # nolint
+  }
+  if ("Acquisition order column name" %in% names(metadata(qcdata)) == TRUE) { # nolint
+    print("Acquisition order column name present in metadata; using existing column for report...") # nolint
+    md1 <- c(md1, "ac" = metadata(qcdata)[["Acquisition order column name"]]) # nolint
+  }
   if ("Class column name" %in% names(metadata(qcdata))) { # nolint
     print("Class column name present in metadata; will split feature counts by compound class...") # nolint
     md1 <- c(md1, "cc" = metadata(qcdata)[["Class column name"]]) # nolint
@@ -247,31 +253,36 @@ ms_qc <- function(
   # Samples
   gen2 <- dplyr::count(
     setNames(as.data.frame(colData(qcdata)), names(colData(qcdata))), # nolint
-    .data[[md1[["sc"]]]]
+    .data[[md1[["sc"]]]] # nolint
   )
   gen3 <- dplyr::count(
     setNames(as.data.frame(colData(qcdata)), names(colData(qcdata))), # nolint
-    .data[[md1[["gc"]]]]
+    .data[[md1[["gc"]]]] # nolint
   )
   # Features
   if ("cc" %in% names(md1) == FALSE) { # nolint
     gen4 <- dplyr::count(
       setNames(as.data.frame(rowData(qcdata)), names(rowData(qcdata))), # nolint
-      .data[["Mode"]]
+      .data[["Mode"]] # nolint
     )
   }
   if ("cc" %in% names(md1)) { # nolint
     gen4 <- dplyr::count(
       setNames(as.data.frame(rowData(qcdata)), names(rowData(qcdata))), # nolint
-      .data[["Mode"]], .data[["Class"]]
+      .data[["Mode"]], .data[[md1[["cc"]]]] # nolint
     )
   }
   if ("is" %in% names(md1)) { # nolint
     gen5 <- rowData(qcdata)[grepl(md1[["is"]], rowData(qcdata)[[md1[["fc"]]]]), ][[md1[["fc"]]]] # nolint
+    outs[["data summary"]] <- list(
+      gen1, gen2, gen3, gen4, gen5
+    )
   }
-  outs[["data summary"]] <- list(
-    gen1, gen2, gen3, gen4, gen5
-  )
+  if ("is" %in% names(md1) == FALSE) { # nolint
+    outs[["data summary"]] <- list(
+      gen1, gen2, gen3, gen4
+    )
+  }
   #---- Data transformation, scaling, and subsetting ----
   print("5. Transforming and subsetting data for report")
   # For imputed and normalized assays, calculate log2 and pareto distributions
@@ -444,12 +455,13 @@ ms_qc <- function(
             )
             ggpubr::ggarrange( # nolint
               # imputed
-              ms_dim_rd(
+              ms_dim_rd( # nolint
                 qc_inputs[[h]][[k]], "imputed",
                 md1[["gc"]], p_lab = FALSE,
                 flag_outliers = TRUE,
                 outlier_calc = tic1[[1]],
-                sid = md1[["sid"]]
+                sid = md1[["sid"]],
+                scale_data = FALSE
               ),
               # normalized
               ms_dim_rd(
@@ -457,7 +469,8 @@ ms_qc <- function(
                 md1[["gc"]], p_lab = FALSE,
                 flag_outliers = TRUE,
                 outlier_calc = tic1[[2]],
-                sid = md1[["sid"]]
+                sid = md1[["sid"]],
+                scale_data = FALSE
               ),
               nrow = 1,
               ncol = 2,

@@ -1,4 +1,4 @@
-# COMb v2.02 (20260327)
+# COMb v2.03 (20260330)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -26,7 +26,8 @@ The HiVE package (https://github.com/cschasestevens/HiVE) extends the plotting c
         * HiVE,
         * ggnewscale,
         * ggrepel,
-        * knitr
+        * knitr,
+        * kableExtra
     * Imports: 
         * ggsci,
         * viridis,
@@ -50,11 +51,7 @@ The HiVE package (https://github.com/cschasestevens/HiVE) extends the plotting c
 * Run the following in a new R session on the command line or within R-Studio:
 
 ```
-devtools::install_github(
-  "cschasestevens/COMb", 
-  ref = "main", 
-  build_vignettes = TRUE
-)
+pak::pak("cs)
 ```
 
 ## Help
@@ -79,6 +76,13 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.03
+    * Fixed error in ms_qc_report .rmd file related to missing data input tables.
+    * Modified ms_create_exp to match output of ms_postproc for preventing errors in downstream QC assessment.
+    * Added option to perform missing value imputation with no normalization in ms_data_norm.
+    * Added pareto scale as a default option for ms_dim_rd to resolve data input errors when uploading normalized data that still contain missing values.
+    * Fixed error in ms_qc related to selecting the compound class column name.
+    * Updated installation instructions using pak (install_github is deprecated in newer versions of devtools).
 * 2.02
     * Added package tutorial.
     * Updated package documentation.

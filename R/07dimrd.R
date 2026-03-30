@@ -3,7 +3,7 @@
 #' Performs dimension reduction for a selected dataset using one
 #' of the following methods: PCA, UMAP, PLSDA.
 #'
-#' @param exp1 SummarizedExperiment containing a pareto-scaled assay.
+#' @param exp1 SummarizedExperiment object.
 #' @param asy Assay to use for dimension reduction.
 #' @param md_var Name of column data variable for plot overlay.
 #' @param dim_type Dimension reduction technique to use for plotting.
@@ -22,6 +22,8 @@
 #' containing the TIC for determining outliers.
 #' @param sid If flag_outliers is TRUE, provide the name of the sample ID
 #' column for labeling outliers.
+#' @param scale_data If TRUE, data will be pareto scaled
+#' prior to dimension reduction.
 #' @return A dimension reduction plot of the specified type.
 #' @examples
 #'
@@ -43,14 +45,33 @@ ms_dim_rd <- function( # nolint
   namefile = NULL,
   flag_outliers = FALSE,
   outlier_calc = NULL,
-  sid = NULL
+  sid = NULL,
+  scale_data = TRUE
 ) {
   # Load data
   d1 <- exp1
+  if (scale_data == FALSE) {
+    SummarizedExperiment::assay(d1, "scaled") <- assay(d1, asy) # nolint
+  }
+  if (scale_data == TRUE) {
+    print("Scaling data for dimension reduction...")
+    # log2-transformation
+    assay(d1, "log2") <- log2(assay(d1, asy)) # nolint
+    # pareto scaling
+    assay(d1, "scaled") <- apply( # nolint
+      apply(
+        assay(d1, "log2"),
+        2,
+        function(x) x - mean(x)
+      ),
+      2,
+      function(y) round(y / sqrt(sd(y)), digits = 3)
+    )
+  }
   #---- PCA ----
   if (dim_type == "PCA") {
     # Calculate PCA
-    p1 <- prcomp(t(assay(d1, asy))) # nolint
+    p1 <- prcomp(t(assay(d1, "scaled"))) # nolint
     vrc <- summary(p1)$importance[2, ]
     ## Format input
     p2 <- setNames(
@@ -74,7 +95,7 @@ ms_dim_rd <- function( # nolint
   if (dim_type == "UMAP") {
     if(ret_umap == TRUE) { # nolint
       p1 <- umap::umap(
-        t(assay(d1, asy)), # nolint
+        t(assay(d1, "scaled")), # nolint
         method = "umap-learn",
         n_epochs = 500,
         n_components = 3,
@@ -84,7 +105,7 @@ ms_dim_rd <- function( # nolint
     }
     if(ret_umap == FALSE) { # nolint
       p1 <- umap::umap(
-        t(assay(d1, asy)), # nolint
+        t(assay(d1, "scaled")), # nolint
         n_epochs = 500,
         n_components = 3,
         verbose = TRUE,
@@ -288,7 +309,7 @@ ms_dim_rd <- function( # nolint
       d2[["ID"]] <- seq.int(1, nrow(d2), 1)
       p4 <- ggplot2::ggplot(
         data = d2,
-        ggplot2::aes(x = .data[["ID"]])
+        ggplot2::aes(x = .data[["ID"]]) # nolint
       ) +
         # mean line
         ggplot2::geom_point(

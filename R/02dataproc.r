@@ -388,7 +388,7 @@ ms_preproc <- function(
               )
             )
           ),
-          "cor", everything()
+          "cor", everything() # nolint
         )
         ## filter alignment IDs with low correlation
         d1 <- d1[
@@ -415,7 +415,7 @@ ms_preproc <- function(
             ),
             "Alignment.ID.orig",
             "adduct.match.ID", "adduct.name",
-            everything()
+            everything()  # nolint
           )
         }
         # Return features with matches to other adducts
@@ -516,7 +516,7 @@ ms_preproc <- function(
                               ),
                               "adduct.name" = mz2[j, ][["Adduct"]]
                             ),
-                            "adduct.match.ID", "adduct.name", everything()
+                            "adduct.match.ID", "adduct.name", everything()  # nolint
                           )
                           return(ad3) # nolint
                         }
@@ -527,7 +527,7 @@ ms_preproc <- function(
                         mz3,
                         "Alignment.ID.orig" = d2[["Alignment.ID"]]
                       ),
-                      "Alignment.ID.orig", everything()
+                      "Alignment.ID.orig", everything()  # nolint
                     )
                   },
                   error = function(e) {
@@ -546,7 +546,7 @@ ms_preproc <- function(
                       ),
                       "Alignment.ID.orig",
                       "adduct.match.ID", "adduct.name",
-                      everything()
+                      everything()  # nolint
                     )
                     mz3 <- mz3[!duplicated(dplyr::select(mz3, -c("cor"))), ]
                     return(mz3) # nolint
@@ -651,7 +651,7 @@ ms_preproc <- function(
                               ),
                               "adduct.name" = mz2[j, ][["Adduct"]]
                             ),
-                            "adduct.match.ID", "adduct.name", everything()
+                            "adduct.match.ID", "adduct.name", everything()  # nolint
                           )
                           return(ad3) # nolint
                         }
@@ -662,7 +662,7 @@ ms_preproc <- function(
                         mz3,
                         "Alignment.ID.orig" = d2[["Alignment.ID"]]
                       ),
-                      "Alignment.ID.orig", everything()
+                      "Alignment.ID.orig", everything() # nolint
                     )
                   },
                   error = function(e) {
@@ -681,7 +681,7 @@ ms_preproc <- function(
                       ),
                       "Alignment.ID.orig",
                       "adduct.match.ID", "adduct.name",
-                      everything()
+                      everything() # nolint
                     )
                     mz3 <- mz3[!duplicated(dplyr::select(mz3, -c("cor"))), ]
                     return(mz3) # nolint
@@ -741,7 +741,7 @@ ms_preproc <- function(
               )
             )
           ),
-          "cor", everything()
+          "cor", everything() # nolint
         )
         ## filter alignment IDs with low correlation
         d1 <- d1[
@@ -768,7 +768,7 @@ ms_preproc <- function(
             ),
             "Alignment.ID.orig",
             "adduct.match.ID", "adduct.name",
-            everything()
+            everything() # nolint
           )
         }
         # Return features with matches to other adducts
@@ -869,7 +869,7 @@ ms_preproc <- function(
                               ),
                               "adduct.name" = mz2[j, ][["Adduct"]]
                             ),
-                            "adduct.match.ID", "adduct.name", everything()
+                            "adduct.match.ID", "adduct.name", everything() # nolint
                           )
                           return(ad3) # nolint
                         }
@@ -880,7 +880,7 @@ ms_preproc <- function(
                         mz3,
                         "Alignment.ID.orig" = d2[["Alignment.ID"]]
                       ),
-                      "Alignment.ID.orig", everything()
+                      "Alignment.ID.orig", everything() # nolint
                     )
                   },
                   error = function(e) {
@@ -899,7 +899,7 @@ ms_preproc <- function(
                       ),
                       "Alignment.ID.orig",
                       "adduct.match.ID", "adduct.name",
-                      everything()
+                      everything() # nolint
                     )
                     mz3 <- mz3[!duplicated(dplyr::select(mz3, -c("cor"))), ]
                     return(mz3) # nolint
@@ -1004,7 +1004,7 @@ ms_preproc <- function(
                               ),
                               "adduct.name" = mz2[j, ][["Adduct"]]
                             ),
-                            "adduct.match.ID", "adduct.name", everything()
+                            "adduct.match.ID", "adduct.name", everything() # nolint
                           )
                           return(ad3) # nolint
                         }
@@ -1015,7 +1015,7 @@ ms_preproc <- function(
                         mz3,
                         "Alignment.ID.orig" = d2[["Alignment.ID"]]
                       ),
-                      "Alignment.ID.orig", everything()
+                      "Alignment.ID.orig", everything() # nolint
                     )
                   },
                   error = function(e) {
@@ -1034,7 +1034,7 @@ ms_preproc <- function(
                       ),
                       "Alignment.ID.orig",
                       "adduct.match.ID", "adduct.name",
-                      everything()
+                      everything() # nolint
                     )
                     mz3 <- mz3[!duplicated(dplyr::select(mz3, -c("cor"))), ]
                     return(mz3) # nolint

@@ -63,60 +63,178 @@ if (is.null(data2[["data summary"]][[4]])) {
 if (is.null(data2[["data summary"]][[5]])) {
   data2[["data summary"]][[5]] <- "No internal standards specified..."
 }
-shiny::fluidRow(
-  shiny::column(
-    2,
-    # Sample summary
-    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
-      kableExtra::kbl(
-        data2[["data summary"]][[2]],
-        align = "c",
-        caption = "Aggregated sample number"
-      ),
-      bootstrap_options = c("striped"),
-      full_width = FALSE
-    ), width = "150px", height = "200px"))
-  ),
-  shiny::column(
-    2,
-    # Sample numbers per group
-    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
-      kableExtra::kbl(
-        data2[["data summary"]][[3]],
-        align = "c",
-        caption = "Samples per group"
-      ),
-      bootstrap_options = c("striped"),
-      full_width = FALSE
-    ), width = "150px", height = "200px"))
-  ),
-  shiny::column(
-    2,
-    # Sample numbers per group
-    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
-      kableExtra::kbl(
-        data2[["data summary"]][[4]],
-        align = "c",
-        caption = "Annotations per class"
-      ),
-      bootstrap_options = c("striped"),
-      full_width = FALSE
-    ), width = "150px", height = "200px"))
-  ),
-  shiny::column(
-    2,
-    # Sample numbers per group
-    shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
-      kableExtra::kbl(
-        data2[["data summary"]][[5]],
-        align = "c",
-        caption = "Internal standard list"
-      ),
-      bootstrap_options = c("striped"),
-      full_width = FALSE
-    ), width = "150px", height = "200px"))
+if (!is.null(data2[["data summary"]][[5]]) && !is.null(data2[["data summary"]][[4]])) { # nolint
+  shiny::fluidRow(
+    shiny::column(
+      2,
+      # Sample summary
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[2]],
+          align = "c",
+          caption = "Aggregated sample number"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[3]],
+          align = "c",
+          caption = "Samples per group"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[4]],
+          align = "c",
+          caption = "Annotations per class"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[5]],
+          align = "c",
+          caption = "Internal standard list"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    )
   )
-)
+}
+if (is.null(data2[["data summary"]][[5]]) && !is.null(data2[["data summary"]][[4]])) { # nolint
+  shiny::fluidRow(
+    shiny::column(
+      2,
+      # Sample summary
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[2]],
+          align = "c",
+          caption = "Aggregated sample number"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[3]],
+          align = "c",
+          caption = "Samples per group"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[4]],
+          align = "c",
+          caption = "Annotations per class"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    )
+  )
+}
+if (!is.null(data2[["data summary"]][[5]]) && is.null(data2[["data summary"]][[4]])) { # nolint
+  shiny::fluidRow(
+    shiny::column(
+      2,
+      # Sample summary
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[2]],
+          align = "c",
+          caption = "Aggregated sample number"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[3]],
+          align = "c",
+          caption = "Samples per group"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[5]],
+          align = "c",
+          caption = "Annotations per class"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    )
+  )
+}
+if (is.null(data2[["data summary"]][[5]]) && is.null(data2[["data summary"]][[4]])) { # nolint
+  shiny::fluidRow(
+    shiny::column(
+      2,
+      # Sample summary
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[2]],
+          align = "c",
+          caption = "Aggregated sample number"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    ),
+    shiny::column(
+      2,
+      # Sample numbers per group
+      shiny::HTML(kableExtra::scroll_box(kableExtra::kable_styling(
+        kableExtra::kbl(
+          data2[["data summary"]][[3]],
+          align = "c",
+          caption = "Samples per group"
+        ),
+        bootstrap_options = c("striped"),
+        full_width = FALSE
+      ), width = "150px", height = "200px"))
+    )
+  )
+}
 ```
 
 ### 2. Check compound/feature presence per group

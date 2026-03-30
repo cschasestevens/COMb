@@ -1,8 +1,8 @@
 ---
-title: "tutorial_v2-02"
+title: "tutorial_v2-03"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{tutorial_v2-02}
+  %\VignetteIndexEntry{tutorial_v2-03}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -44,14 +44,6 @@ knitr::opts_chunk$set(
 ```
 ### 1.1. Define Parameters and Upload Data
 ```{r setup1, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
-# Check if libraries are installed
-## HiVE
-if ("HiVE" %in% unique(installed.packages()[, 1]) == FALSE) {
-  devtools::install_github("cschasestevens/HiVE",
-    ref = "main",
-    build_vignettes = TRUE
-  )
-}
 # Load libraries
 library(COMb)
 library(HiVE)

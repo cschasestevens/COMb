@@ -87,18 +87,18 @@ ms_create_exp <- function(
   }
   # Create SummarizedExperiment
   d_out <- SummarizedExperiment::SummarizedExperiment(
-    assays = list("input" = d1),
+    assays = list("raw" = d1),
     rowData = d2,
     colData = d3,
     metadata = d4
   )
   if (format_data == TRUE) {
-    assay(d_out, "format") <- assay(d_out, "input")
-    assay(d_out, "format")[grepl("n/d|na", assay(d_out, "format"))] <- NA
-    assay(d_out, "format") <- apply(
-      assay(d_out, "format"), 2, function(x) as.numeric(x)
+    assay(d_out, "raw") <- assay(d_out, "raw") # nolint
+    assay(d_out, "raw")[grepl("n/d|na", assay(d_out, "raw"))] <- NA # nolint
+    assay(d_out, "raw") <- apply( # nolint
+      assay(d_out, "raw"), 2, function(x) as.numeric(x)
     )
-    assay(d_out, "format")[is.na(assay(d_out, "format"))] <- 0
+    assay(d_out, "raw")[is.na(assay(d_out, "raw"))] <- 0 # nolint
   }
   return(d_out) # nolint
 }

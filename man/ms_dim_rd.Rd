@@ -16,11 +16,12 @@ ms_dim_rd(
   namefile = NULL,
   flag_outliers = FALSE,
   outlier_calc = NULL,
-  sid = NULL
+  sid = NULL,
+  scale_data = TRUE
 )
 }
 \arguments{
-\item{exp1}{SummarizedExperiment containing a pareto-scaled assay.}
+\item{exp1}{SummarizedExperiment object.}
 
 \item{asy}{Assay to use for dimension reduction.}
 
@@ -50,6 +51,9 @@ containing the TIC for determining outliers.}
 
 \item{sid}{If flag_outliers is TRUE, provide the name of the sample ID
 column for labeling outliers.}
+
+\item{scale_data}{If TRUE, data will be pareto scaled
+prior to dimension reduction.}
 }
 \value{
 A dimension reduction plot of the specified type.
