@@ -38,10 +38,10 @@ ms_stat_uni <- function( # nolint
   #---- Setup ----
   # Load summarizedexperiment and associated data
   ## Input matrix
-  d1 <- as.data.frame(t(assay(exp1, asy)))
+  d1 <- as.data.frame(t(assay(exp1, asy))) # nolint
   mtype <- mat_type
   ## row data
-  an1 <- as.data.frame(rowData(exp1))
+  an1 <- as.data.frame(rowData(exp1)) # nolint
   ## column data
   md1 <- as.data.frame(colData(exp1)) # nolint
   ## metadata variable names

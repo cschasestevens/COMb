@@ -139,7 +139,7 @@ ms_plot_heat <- function(
   cn = TRUE,
   rn = TRUE,
   filtp = FALSE,
-  scm1 = col_grad(scm = 3),
+  scm1 = col_grad(scm = 3), # nolint
   col_fun = 1
 ) {
   # Load and subset data
@@ -382,7 +382,7 @@ ms_plot_scatter <- function(
       ggplot2::scale_fill_manual(
         name = "Type",
         values = rep(
-          col_univ()[[2]],
+          col_univ()[[2]], # nolint
           length(unique(d[d[[oxvar]] == "Unoxidized", ][[clvar]]))
         )
       ) +
@@ -509,11 +509,11 @@ ms_plot_vio <- function(
   d1 <- exp1
   if (is.null(var_sum)) {
     v1 <- as.vector(
-      t(assay(d1[rowData(d1)[[var_c]] == comp, ], asy))
+      t(assay(d1[rowData(d1)[[var_c]] == comp, ], asy)) # nolint
     )
     df1 <- data.frame(
       "x" = factor(
-        colData(d1)[[var_x]],
+        colData(d1)[[var_x]], # nolint
         levels = gtools::mixedsort(
           unique(colData(d1)[[var_x]])
         )
@@ -535,7 +535,7 @@ ms_plot_vio <- function(
         fill = .data[["grp"]]
       )
     ) +
-      ggplot2::scale_fill_manual(name = "Group", values = col_univ()) +
+      ggplot2::scale_fill_manual(name = "Group", values = col_univ()) + # nolint
       # Add Theme
       ms_theme() + # nolint
       ggplot2::labs(x = "", y = plab, title = title1) +
@@ -567,16 +567,16 @@ ms_plot_vio <- function(
   }
   if (!is.null(var_sum)) {
     df1 <- dplyr::bind_cols(
-      data.frame("GroupID" = unique(rowData(d1)[[var_sum]])),
+      data.frame("GroupID" = unique(rowData(d1)[[var_sum]])), # nolint
       dplyr::bind_cols(
         lapply(
           seq.int(1, ncol(d1), 1),
           function(i) {
             setNames(as.data.frame(aggregate(
-              as.vector(assay(d1, asy)[, i]),
-              list(rowData(d1)[[var_sum]]),
+              as.vector(assay(d1, asy)[, i]), # nolint
+              list(rowData(d1)[[var_sum]]), # nolint
               function(j) mean(j)
-            )[[2]]), colData(d1)[[var_id]][[i]])
+            )[[2]]), colData(d1)[[var_id]][[i]]) # nolint
           }
         )
       )
@@ -584,7 +584,7 @@ ms_plot_vio <- function(
     df1 <- setNames(reshape2::melt(
       df1, id.vars = "GroupID"
     ), c("GroupID", var_id, "value"))
-    df2 <- as.data.frame(colData(d1)[, c(var_id, var_cl, var_x)])
+    df2 <- as.data.frame(colData(d1)[, c(var_id, var_cl, var_x)]) # nolint
     df2[[var_id]] <- factor(df2[[var_id]], levels = levels(df1[[var_id]]))
     df1 <- dplyr::left_join(df1, df2, by = var_id)
     # Plot
@@ -596,7 +596,7 @@ ms_plot_vio <- function(
         fill = .data[[var_cl]]
       )
     ) +
-      ggplot2::scale_fill_manual(name = var_cl, values = col_univ()) +
+      ggplot2::scale_fill_manual(name = var_cl, values = col_univ()) + # nolint
       # Add violin plot and dotplot
       # Add Theme
       ms_theme() + # nolint
@@ -620,13 +620,15 @@ ms_plot_vio <- function(
 #'
 #' Generates a bar plot with error bars from an input data frame.
 #'
+#' @param ptype Bar plot type (either "stacked" or "std").
 #' @param df1 Input data frame.
 #' @param df2 Data frame containing group standard deviations (for error bars).
 #' @param xvar X-axis variable.
 #' @param yvar Y-axis variable.
 #' @param clvar Group variable.
 #' @param plab Plot y-axis label.
-#' @return A violin plot for the chosen treatment comparisons.
+#' @param labvar Additional variable for plotting proportions (optional).
+#' @return A bar plot for the chosen treatment comparisons.
 #' @examples
 #'
 #' # ms_plot_bar(
@@ -637,81 +639,147 @@ ms_plot_vio <- function(
 #'
 #' @export
 ms_plot_bar <- function(
+  ptype = "stacked",
   df1,
-  df2,
-  xvar,
-  yvar,
-  clvar = "Group",
-  plab = "nM / ng per million cells"
+  df2 = NULL,
+  xvar = "Assay",
+  yvar = "Count",
+  clvar = "Class",
+  labvar = NULL,
+  plab = "Proportion"
 ) {
-  pv <- ggplot2::ggplot(
-    data = df1,
-    ggplot2::aes(
-      x = .data[[xvar]], # nolint
-      y = .data[[yvar]],
-      fill = .data[[clvar]]
-    )
-  ) +
-    ggplot2::scale_fill_manual(
-      name = clvar,
-      values = col_univ()
-    ) +
-    # Add barplot
-    ggplot2::geom_bar(
-      stat = "summary",
-      fun = mean,
-      position = "dodge",
-      width = 0.6,
-      color = "grey25"
-    ) +
-    ggplot2::geom_errorbar(
-      data = df2,
+  # Load data
+  d1 <- df1
+  #---- Stacked bar ----
+  if (ptype == "stacked") {
+    pv <- ggplot2::ggplot(
+      data = d1,
       ggplot2::aes(
-        x = .data[[xvar]],
-        y = .data[["mean"]],
-        ymin = .data[["mean"]] - .data[["sd"]],
-        ymax = .data[["mean"]] + .data[["sd"]]
-      ),
-      position = "dodge",
-      width = 0.6,
-      color = "grey25"
-    ) +
-    # Add Theme
-    ms_theme() + # nolint
-    ggplot2::labs(
-      title = yvar,
-      y = plab,
-      x = ""
-    ) +
-    ggplot2::theme(
-      plot.margin = ggplot2::unit(
-        c(
-          0.5,
-          0.5,
-          0.5,
-          0.5
-        ),
-        "cm"
-      ),
-      axis.text.y = ggplot2::element_text(
-        face = "bold",
-        size = 12
-      ),
-      axis.title.y = ggplot2::element_text(
-        face = "bold",
-        size = 12
+        x = .data[[xvar]], # nolint
+        y = .data[[yvar]],
+        fill = .data[[clvar]]
       )
-    )
+    ) +
+      ggplot2::scale_fill_manual(
+        name = clvar,
+        values = col_univ() # nolint
+      ) +
+      # Add barplot
+      ggplot2::geom_bar(
+        ggplot2::aes(
+          fill = .data[[clvar]]
+        ),
+        stat = "identity",
+        position = "fill",
+        width = 0.6,
+        color = "grey25"
+      ) +
+      shadowtext::geom_shadowtext(
+        ggplot2::aes(label = .data[[labvar]]),
+        position = ggplot2::position_fill(
+          vjust = 0.5
+        ),
+        size = 3,
+        color = "white",
+        bg.color = "grey25",
+        bg.r = 0.1,
+        fontface = "bold"
+      ) +
+      # Add Theme
+      ms_theme() + # nolint
+      ggplot2::labs(
+        y = plab,
+        x = ""
+      ) +
+      ggplot2::theme(
+        plot.margin = ggplot2::unit(
+          c(
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ),
+          "cm"
+        ),
+        axis.text.y = ggplot2::element_text(
+          face = "bold",
+          size = 12
+        ),
+        axis.title.y = ggplot2::element_text(
+          face = "bold",
+          size = 12
+        )
+      )
+  }
+  #---- Standard bar ----
+  if (ptype == "std") {
+    pv <- ggplot2::ggplot(
+      data = d1,
+      ggplot2::aes(
+        x = .data[[xvar]], # nolint
+        y = .data[[yvar]],
+        fill = .data[[clvar]]
+      )
+    ) +
+      ggplot2::scale_fill_manual(
+        name = clvar,
+        values = col_univ() # nolint
+      ) +
+      # Add barplot
+      ggplot2::geom_bar(
+        stat = "summary",
+        fun = mean,
+        position = "dodge",
+        width = 0.6,
+        color = "grey25"
+      ) +
+      ggplot2::geom_errorbar(
+        data = df2,
+        ggplot2::aes(
+          x = .data[[xvar]],
+          y = .data[["mean"]],
+          ymin = .data[["mean"]] - .data[["sd"]],
+          ymax = .data[["mean"]] + .data[["sd"]]
+        ),
+        position = "dodge",
+        width = 0.6,
+        color = "grey25"
+      ) +
+      # Add Theme
+      ms_theme() + # nolint
+      ggplot2::labs(
+        title = yvar,
+        y = plab,
+        x = ""
+      ) +
+      ggplot2::theme(
+        plot.margin = ggplot2::unit(
+          c(
+            0.5,
+            0.5,
+            0.5,
+            0.5
+          ),
+          "cm"
+        ),
+        axis.text.y = ggplot2::element_text(
+          face = "bold",
+          size = 12
+        ),
+        axis.title.y = ggplot2::element_text(
+          face = "bold",
+          size = 12
+        )
+      )
+  }
   return(pv) # nolint
 }
 
 #' General Heatmap
 #'
-#' Generates a heatmap from a Seurat Object,
-#' which can be filtered based on differentially
-#' expressed genes.
+#' Generates a heatmap from a SummarizedExperiment.
 #'
-#' @param so A SummarizedExperiment object.
+#' @param exp1 A SummarizedExperiment object.
 #' @param stat_data Generate heatmap based on statistical results instead
 #' of intensity/abundance values from a summarizedexperiment. Results
 #' tables should be formatted according to outputs from ms_stat_uni.
@@ -738,11 +806,11 @@ ms_plot_bar <- function(
 #' @return A ComplexHeatmap object.
 #' @examples
 #'
-#' # ms_plot_hm(so = data1)
+#' # ms_plot_hm(exp1 = data1)
 #'
 #' @export
 ms_plot_hm <- function(
-  so = NULL,
+  exp1 = NULL,
   stat_data = NULL,
   deg_sig = FALSE,
   l_cstm = NULL,
@@ -768,20 +836,20 @@ ms_plot_hm <- function(
   # return either all compounds or a custom list
   if (is.null(stat_data)) {
     # load sumexp
-    d <- so
+    d <- exp1
     # if custom list is not provided
     if (is.null(l_cstm)) {
-      cl_mark <- rowData(d)[[feat_var]]
+      cl_mark <- rowData(d)[[feat_var]] # nolint
     }
     if (!is.null(l_cstm)) {
-      cl_mark <- rowData(d)[rowData(d)[[feat_var]] %in% l_cstm, ]
+      cl_mark <- rowData(d)[rowData(d)[[feat_var]] %in% l_cstm, ] # nolint
     }
     # Subset data and format as matrix
     h <- setNames(
       data.frame(
-        colData(d)[[cl_var]],
+        colData(d)[[cl_var]], # nolint
         as.data.frame(
-          t(assay(d, asy)[rowData(d)[[feat_var]] %in% cl_mark, ])
+          t(assay(d, asy)[rowData(d)[[feat_var]] %in% cl_mark, ]) # nolint
         )
       ),
       c("Group", cl_mark)
@@ -899,7 +967,7 @@ ms_plot_hm <- function(
         round(mean(c(qs[[1]], qs[[2]])), digits = 0),
         qs[[2]]
       ),
-      colors = col_grad(scm = 4)
+      colors = col_grad(scm = 4) # nolint
     )
   }
   # Create Plot

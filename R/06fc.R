@@ -38,12 +38,12 @@ ms_stat_fc <- function( # nolint
   #---- Setup ----
   # Load summarizedexperiment and associated data
   ## Input matrix
-  d1 <- as.data.frame(t(assay(exp1, asy)))
+  d1 <- as.data.frame(t(assay(exp1, asy))) # nolint
   mtype <- mat_type
   ## column data
-  an1 <- as.data.frame(rowData(exp1))
+  an1 <- as.data.frame(rowData(exp1)) # nolint
   ## row data
-  md1 <- as.data.frame(colData(exp1))
+  md1 <- as.data.frame(colData(exp1)) # nolint
   ## metadata variable names
   md_var1 <- col_grp
   cc1 <- col_class

@@ -1,8 +1,8 @@
 Package: COMb
-Date: 2026-03-30
+Date: 2026-02-24
 Type: Package
 Title: Comprehensive Observation/analysis of Metabolomics data (COMb)
-Version: 2.03
+Version: 2.04
 Author: Nathanial C. Stevens
 Maintainer: Nathanial C. Stevens <cschasestevens@gmail.com>
 Description: Utilizes various R packages to perform processing and analysis of untargeted metabolomics/lipidomics datasets.    The methods included in this package provide a standardized workflow for data processing, statistical methods, and visualization of metabolomics data.    Most analyses can be run in parallel to expedite lengthy analyses.    The package is compatible with all operating systems. However, parallel processing is only available on Mac and Linux operating systems.

@@ -1,4 +1,4 @@
-# COMb v2.03 (20260330)
+# COMb v2.04 (20260424)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -51,7 +51,7 @@ The HiVE package (https://github.com/cschasestevens/HiVE) extends the plotting c
 * Run the following in a new R session on the command line or within R-Studio:
 
 ```
-pak::pak("cs)
+pak::pak("cschasestevens/COMb")
 ```
 
 ## Help
@@ -76,6 +76,9 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.04
+    * Added additional customization options to ms_plot_vio and ms_plot_bar.
+    * Added option to include heatmap annotations in ms_check_pres.
 * 2.03
     * Fixed error in ms_qc_report .rmd file related to missing data input tables.
     * Modified ms_create_exp to match output of ms_postproc for preventing errors in downstream QC assessment.

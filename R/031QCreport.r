@@ -279,8 +279,9 @@ ms_qc <- function(
     )
   }
   if ("is" %in% names(md1) == FALSE) { # nolint
+    gen5 <- NULL
     outs[["data summary"]] <- list(
-      gen1, gen2, gen3, gen4
+      gen1, gen2, gen3, gen4, gen5
     )
   }
   #---- Data transformation, scaling, and subsetting ----
@@ -848,6 +849,8 @@ ms_samp_cor <- function(
 #' @param asy Assay name to calculate group presence/absence.
 #' @param var_g Group variable name.
 #' @param var_feat Feature name column from rowData.
+#' @param anno_row Row annotation variable name(s).
+#' @param anno_col Column annotation variable name(s).
 #' @param hw Presence/absence heatmap width.
 #' @param hh Presence/absence heatmap height.
 #' @param fsc Heatmap column names fontsize.
@@ -870,6 +873,8 @@ ms_check_pres <- function(
   asy = "raw",
   var_g = "Group",
   var_feat = "Label",
+  anno_row = NULL,
+  anno_col = NULL,
   hw = 20,
   hh = 20,
   fsc = 8,
@@ -920,6 +925,118 @@ ms_check_pres <- function(
     c(0, 0.5, 1),
     colors = col_grad(scm = 4) # nolint
   )
+  if (!is.null(anno_row)) {
+    if (length(anno_row) == 1) {
+      fun_hm_bar_row <- list(
+        "var_row1" = setNames(
+          col_univ()[1:length(unique(rowData(ld1)[[anno_row]]))], # nolint
+          factor(
+            as.character(unique(rowData(ld1)[[anno_row]])),
+            levels = gtools::mixedsort(
+              as.character(unique(rowData(ld1)[[anno_row]]))
+            )
+          ) # nolint
+        )
+      )
+      ### Annotations
+      hm_anno_row <- list(
+        "row1" = ComplexHeatmap::rowAnnotation( # nolint
+          `var_row1` = factor(
+            as.character(
+              rowData(ld1)[[anno_row]] # nolint
+            ),
+            levels = unique(gtools::mixedsort(
+                rowData(ld1)[[anno_row]] # nolint
+              ))
+          ), # nolint
+          col = fun_hm_bar_row,
+          show_annotation_name = FALSE
+        )
+      )
+    }
+    if (length(anno_row) == 2) {
+      fun_hm_bar_row <- list(
+        "var_row1" = setNames(
+          col_univ()[1:length(unique(rowData(ld1)[[anno_row[[1]]]]))], # nolint
+          as.character(unique(rowData(ld1)[[anno_row[[1]]]])) # nolint
+        ),
+        "var_row2" = setNames(
+          col_univ()[1:length(unique(rowData(ld1)[[anno_row[[2]]]]))], # nolint
+          as.character(unique(rowData(ld1)[[anno_row[[2]]]])) # nolint
+        )
+      )
+      ### Annotations
+      hm_anno_row <- list(
+        "row1" = ComplexHeatmap::rowAnnotation( # nolint
+          `var_row1` = factor(
+            as.character(
+              rowData(ld1)[[anno_row[[1]]]] # nolint
+            ),
+            levels = unique(rowData(ld1)[
+              gtools::mixedorder(
+                paste(
+                  rowData(ld1)[[anno_row[[1]]]], # nolint
+                  rowData(ld1)[[anno_row[[2]]]] # nolint
+                )
+              ),
+            ][[anno_row[[1]]]])
+          ), # nolint
+          `var_row2` = factor(
+            as.character(
+              rowData(ld1)[[anno_row[[2]]]] # nolint
+            ),
+            levels = unique(rowData(ld1)[
+              gtools::mixedorder(
+                paste(
+                  rowData(ld1)[[anno_row[[1]]]], # nolint
+                  rowData(ld1)[[anno_row[[2]]]] # nolint
+                )
+              ),
+            ][[anno_row[[2]]]])
+          ), # nolint
+          col = fun_hm_bar_row,
+          show_annotation_name = FALSE
+        )
+      )
+    }
+  }
+  if (!is.null(anno_col)) {
+    if (length(anno_col) == 1) {
+      fun_hm_bar_col <- list(
+        "var_col1" = setNames(
+          col_univ()[1:length(unique(colData(ld1)[[anno_col]]))], # nolint
+          factor(
+            as.character(unique(colData(ld1)[[anno_col]])),
+            levels = gtools::mixedsort(
+              as.character(unique(colData(ld1)[[anno_col]]))
+            )
+          ) # nolint
+        )
+      )
+      ### Annotations
+      #### bind group with names in matrix
+      hma1 <- data.frame(
+        "var1" = gtools::mixedsort(unique(colData(ld1)[[var_g]])) # nolint
+      )
+      hma2 <- setNames(
+        as.data.frame(
+          colData(ld1)[, c(var_g, anno_col)] # nolint
+        ), c("var1", anno_col)
+      )
+      hm_anno_col_in <- dplyr::left_join(
+        hma1,
+        hma2[!duplicated(hma2[["var1"]]), ],
+        by = "var1"
+      )
+      hm_anno_col <- list(
+        "column1" = ComplexHeatmap::HeatmapAnnotation(
+          `var_col1` = hm_anno_col_in[[anno_col]], # nolint
+          col = fun_hm_bar_col,
+          show_annotation_name = FALSE
+        )
+      )
+    }
+  }
   if (trans == FALSE) {
     h_out <- ComplexHeatmap::Heatmap(
       h1,
@@ -933,7 +1050,9 @@ ms_check_pres <- function(
       heatmap_height = ggplot2::unit(hh, "cm"),
       column_title = paste(title1),
       column_names_gp = grid::gpar(fontsize = fsc),
-      row_names_gp = grid::gpar(fontsize = fsr)
+      row_names_gp = grid::gpar(fontsize = fsr),
+      top_annotation = if (!is.null(anno_col)) hm_anno_col[[1]] else NULL,
+      left_annotation = if (!is.null(anno_row)) hm_anno_row[[1]] else NULL
     )
   }
   if (trans == TRUE) {
