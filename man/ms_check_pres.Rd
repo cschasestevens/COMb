@@ -9,6 +9,8 @@ ms_check_pres(
   asy = "raw",
   var_g = "Group",
   var_feat = "Label",
+  anno_row = NULL,
+  anno_col = NULL,
   hw = 20,
   hh = 20,
   fsc = 8,
@@ -29,6 +31,10 @@ ms_check_pres(
 \item{var_g}{Group variable name.}
 
 \item{var_feat}{Feature name column from rowData.}
+
+\item{anno_row}{Row annotation variable name(s).}
+
+\item{anno_col}{Column annotation variable name(s).}
 
 \item{hw}{Presence/absence heatmap width.}
 

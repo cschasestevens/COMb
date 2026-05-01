@@ -1,13 +1,13 @@
 ---
-title: "tutorial_v2-04"
+title: "tutorial_v2-05"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{tutorial_v2-04}
+  %\VignetteIndexEntry{tutorial_v2-05}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-# **COMb Tutorial v2.04**
+# **COMb Tutorial v2.05**
 
 ## **Contents:**
 ## 1. Setup

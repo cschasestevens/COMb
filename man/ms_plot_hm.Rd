@@ -5,7 +5,7 @@
 \title{General Heatmap}
 \usage{
 ms_plot_hm(
-  so = NULL,
+  exp1 = NULL,
   stat_data = NULL,
   deg_sig = FALSE,
   l_cstm = NULL,
@@ -28,7 +28,7 @@ ms_plot_hm(
 )
 }
 \arguments{
-\item{so}{A SummarizedExperiment object.}
+\item{exp1}{A SummarizedExperiment object.}
 
 \item{stat_data}{Generate heatmap based on statistical results instead
 of intensity/abundance values from a summarizedexperiment. Results
@@ -76,12 +76,10 @@ the input data undergo no additional scaling.}
 A ComplexHeatmap object.
 }
 \description{
-Generates a heatmap from a Seurat Object,
-which can be filtered based on differentially
-expressed genes.
+Generates a heatmap from a SummarizedExperiment.
 }
 \examples{
 
-# ms_plot_hm(so = data1)
+# ms_plot_hm(exp1 = data1)
 
 }

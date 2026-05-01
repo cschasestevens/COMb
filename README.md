@@ -1,4 +1,4 @@
-# COMb v2.04 (20260424)
+# COMb v2.05 (20260501)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -45,7 +45,8 @@ The HiVE package (https://github.com/cschasestevens/HiVE) extends the plotting c
         * reshape2,
         * umap,
         * mvnormtest,
-        * EnhancedVolcano
+        * EnhancedVolcano,
+        * shadowtext
 
 ### Installation
 * Run the following in a new R session on the command line or within R-Studio:
@@ -76,6 +77,9 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.05
+    * Added ms_stat_corr for conducting correlation analysis between metabolomics/lipidomics data.
+    * Updated package documentation.
 * 2.04
     * Added additional customization options to ms_plot_vio and ms_plot_bar.
     * Added option to include heatmap annotations in ms_check_pres.

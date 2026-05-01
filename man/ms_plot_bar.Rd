@@ -5,15 +5,19 @@
 \title{Bar Plot}
 \usage{
 ms_plot_bar(
+  ptype = "stacked",
   df1,
-  df2,
-  xvar,
-  yvar,
-  clvar = "Group",
-  plab = "nM / ng per million cells"
+  df2 = NULL,
+  xvar = "Assay",
+  yvar = "Count",
+  clvar = "Class",
+  labvar = NULL,
+  plab = "Proportion"
 )
 }
 \arguments{
+\item{ptype}{Bar plot type (either "stacked" or "std").}
+
 \item{df1}{Input data frame.}
 
 \item{df2}{Data frame containing group standard deviations (for error bars).}
@@ -24,10 +28,12 @@ ms_plot_bar(
 
 \item{clvar}{Group variable.}
 
+\item{labvar}{Additional variable for plotting proportions (optional).}
+
 \item{plab}{Plot y-axis label.}
 }
 \value{
-A violin plot for the chosen treatment comparisons.
+A bar plot for the chosen treatment comparisons.
 }
 \description{
 Generates a bar plot with error bars from an input data frame.
