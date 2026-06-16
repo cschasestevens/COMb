@@ -1102,7 +1102,7 @@ ms_preproc <- function(
     "data_preproc_feat" = d_out,
     "data_summary" = d_check
   )
-  return(list_output)
+  return(list_output) # nolint
 }
 
 #' Post-processing of Curated Lipidomics/Metabolomics Data
@@ -1345,5 +1345,5 @@ ms_postproc <- function(
     print(paste(nrow(d3[[1]]), " unique compounds, including internal standards, and", sep = "")) # nolint
     print(paste(ncol(d3[[1]]), " samples, including QCs.", sep = ""))
   }
-  return(d4)
+  return(d4) # nolint
 }

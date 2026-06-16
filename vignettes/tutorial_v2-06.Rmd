@@ -1,13 +1,13 @@
 ---
-title: "tutorial_v2-05"
+title: "tutorial_v2-06"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{tutorial_v2-05}
+  %\VignetteIndexEntry{tutorial_v2-06}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-# **COMb Tutorial v2.05**
+# **COMb Tutorial v2.06**
 
 ## **Contents:**
 ## 1. Setup
@@ -46,7 +46,6 @@ knitr::opts_chunk$set(
 ```{r setup1, echo = TRUE, fig.align= "center", results = FALSE, message = FALSE, warning = FALSE, eval = FALSE}
 # Load libraries
 library(COMb)
-library(HiVE)
 library(SummarizedExperiment)
 library(dplyr)
 # Set working directory

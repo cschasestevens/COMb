@@ -1,4 +1,4 @@
-# COMb v2.05 (20260501)
+# COMb v2.06 (20260616)
 Comprehensive Observation/analysis of Metabolomics data (COMb)
 
 ## Description
@@ -77,6 +77,14 @@ browseVignettes("COMb")
 * LinkedIn: https://www.linkedin.com/in/nathanial-chase-stevens-phd-08775180/
 
 ## Version History
+* 2.06
+    * Updated tutorial to reflect changes made in v2.06.
+    * Added print messages when using COMb plot themes and color schemes.
+    * Integrated plotting themes into a single function within ms_theme.
+    * Added parameter to all plot functions to return input data used to generate each plot. Useful for preparing source data files for manuscript submissions.
+    * Simplified scripts for plotting functions to prevent unintended errors.
+    * Added option to ms_plot_volcano to color plot points by class.
+    * Added option to include a column or row annotation to ms_plot_hm.
 * 2.05
     * Added ms_stat_corr for conducting correlation analysis between metabolomics/lipidomics data.
     * Updated package documentation.

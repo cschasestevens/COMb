@@ -220,7 +220,7 @@ ms_data_check <- function(
     row_names_gp = grid::gpar(fontsize = fsr),
     column_names_gp = grid::gpar(fontsize = fsc)
   )
-  return(dimr)
+  return(dimr) # nolint
 }
 
 #' Blank Subtraction

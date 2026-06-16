@@ -24,6 +24,8 @@
 #' column for labeling outliers.
 #' @param scale_data If TRUE, data will be pareto scaled
 #' prior to dimension reduction.
+#' @param ret_input If TRUE, return the input data used for the
+#' dimension reduction plot.
 #' @return A dimension reduction plot of the specified type.
 #' @examples
 #'
@@ -46,7 +48,8 @@ ms_dim_rd <- function( # nolint
   flag_outliers = FALSE,
   outlier_calc = NULL,
   sid = NULL,
-  scale_data = TRUE
+  scale_data = TRUE,
+  ret_input = FALSE
 ) {
   # Load data
   d1 <- exp1
@@ -185,6 +188,27 @@ ms_dim_rd <- function( # nolint
   }
   #---- Plot ----
   if(dim1 == "2D") { # nolint
+    outp <- ggplot2::ggplot(
+      data = p2,
+      ggplot2::aes(
+        x = .data[[names(p2)[[1]]]], # nolint
+        y = .data[[names(p2)[[2]]]] # nolint
+      )
+    ) +
+      ggplot2::geom_point(
+        ggplot2::aes(
+          color = colData(d1)[[md_var]] # nolint
+        ),
+        shape = 16,
+        size = 2,
+        alpha = 0.6
+      ) +
+      ggplot2::scale_color_manual(
+        paste(""),
+        values = col_univ() # nolint
+      ) +
+      ms_theme() + # nolint
+      ggplot2::labs(title = dim_type)
     if(p_lab == TRUE) { # nolint
       # Calculate median label positions
       p3lab <- setNames(
@@ -197,21 +221,7 @@ ms_dim_rd <- function( # nolint
         )
       )
       # Plot
-      p3 <- ggplot2::ggplot(
-        data = p2,
-        ggplot2::aes(
-          x = .data[[names(p2)[[1]]]], # nolint
-          y = .data[[names(p2)[[2]]]] # nolint
-        )
-      ) +
-        ggplot2::geom_point(
-          ggplot2::aes(
-            color = colData(d1)[[md_var]] # nolint
-          ),
-          shape = 16,
-          size = 2,
-          alpha = 0.6
-        ) +
+      outp <- outp +
         ggrepel::geom_text_repel(
           data = p3lab,
           ggplot2::aes(
@@ -219,72 +229,26 @@ ms_dim_rd <- function( # nolint
           ),
           size = 4,
           bg.color = "white"
-        ) +
-        ggplot2::scale_color_manual(
-          paste(""),
-          values = col_univ() # nolint
-        ) +
-        ms_theme() # nolint
-      # If show_axes is FALSE
-      if (show_axes == FALSE) {
-        p3 <- p3 +
-          ggplot2::theme(
-            panel.grid.major.y = ggplot2::element_blank(),
-            axis.text.x = ggplot2::element_blank(),
-            axis.text.y = ggplot2::element_blank(),
-            axis.title.x = ggplot2::element_blank(),
-            axis.title.y = ggplot2::element_blank(),
-            axis.ticks = ggplot2::element_blank(),
-            plot.margin = ggplot2::unit(
-              c(0.1, 0.1, 0.1, 0.1), "cm"
-            ),
-            legend.position = "none"
-          )
-      }
-    }
-    if(p_lab == FALSE) { # nolint
-      # Plot
-      p3 <- ggplot2::ggplot(
-        data = p2,
-        ggplot2::aes(
-          x = .data[[names(p2)[[1]]]], # nolint
-          y = .data[[names(p2)[[2]]]] # nolint
         )
-      ) +
-        ggplot2::geom_point(
-          ggplot2::aes(
-            color = colData(d1)[[md_var]] # nolint
-          ),
-          shape = 16,
-          size = 2,
-          alpha = 0.6
-        ) +
-        ggplot2::scale_color_manual(
-          paste(""),
-          values = col_univ() # nolint
-        ) +
-        ms_theme() # nolint
-      # If show_axes is FALSE
-      if (show_axes == FALSE) {
-        p3 <- p3 +
-          ggplot2::theme(
-            panel.grid.major.y = ggplot2::element_blank(),
-            axis.text.x = ggplot2::element_blank(),
-            axis.text.y = ggplot2::element_blank(),
-            axis.title.x = ggplot2::element_blank(),
-            axis.title.y = ggplot2::element_blank(),
-            axis.ticks = ggplot2::element_blank(),
-            plot.margin = ggplot2::unit(
-              c(0.1, 0.1, 0.1, 0.1), "cm"
-            ),
-            legend.position = "none"
-          )
-      }
     }
-    p3 <- p3 + ggplot2::labs(title = dim_type)
+    if (show_axes == FALSE) {
+      outp <- outp +
+        ggplot2::theme(
+          panel.grid.major.y = ggplot2::element_blank(),
+          axis.text.x = ggplot2::element_blank(),
+          axis.text.y = ggplot2::element_blank(),
+          axis.title.x = ggplot2::element_blank(),
+          axis.title.y = ggplot2::element_blank(),
+          axis.ticks = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(
+            c(0.1, 0.1, 0.1, 0.1), "cm"
+          ),
+          legend.position = "none"
+        )
+    }
     if (flag_outliers == TRUE) {
       # Generate loadings plot
-      p3 <- p3 +
+      outp <- outp +
         ggrepel::geom_label_repel(
           ggplot2::aes(
             label = ifelse(
@@ -352,25 +316,26 @@ ms_dim_rd <- function( # nolint
           values = col_univ() # nolint
         ) +
         ms_theme() # nolint
-      p3 <- ggpubr::ggarrange(
-        p3, p4, nrow = 1, ncol = 2
+      outp <- ggpubr::ggarrange(
+        outp, p4, nrow = 1, ncol = 2
       )
     }
   }
   if(dim1 == "3D") { # nolint
-    p3 <- plotly::plot_ly(
+    options(browser = "xdg-open")
+    outp <- plotly::plot_ly(
       p2,
       x = ~.data[[names(p2)[[1]]]], # nolint
       y = ~.data[[names(p2)[[2]]]], # nolint
       z = ~.data[[names(p2)[[3]]]], # nolint
       color = ~as.factor(colData(d1)[[md_var]]), # nolint
-      colors = col_univ() # nolint
+      colors = col_univ(), # nolint
+      width = 800,
+      height = 600
     ) %>% # nolint
-      plotly::add_markers(marker = list(size = 4)) %>%
+      plotly::add_markers(marker = list(size = 4)) %>% # nolint
       plotly::layout(
         autosize = FALSE,
-        width = 800,
-        height = 600,
         margin = list(
           l = 50,
           r = 50,
@@ -380,9 +345,20 @@ ms_dim_rd <- function( # nolint
         )
       )
     htmlwidgets::saveWidget(
-      p3,
+      outp,
       file = namefile # nolint
     )
   }
-  return(p3)
+  if (ret_input == TRUE) {
+    return(
+      list(
+        "plot" = outp,
+        "input" = p2
+      )
+    )
+  }
+  if (ret_input == FALSE) {
+    return(outp)
+  }
+  return(outp) # nolint
 }

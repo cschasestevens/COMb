@@ -365,7 +365,7 @@ ms_qc <- function(
                 names(qc_inputs[[h]])[[k]],
                 ":", sep = ""
               )
-            )
+            )[["heatmap"]]
           }
         ), names(qc_inputs[[h]]))
         return(p1) # nolint
@@ -1081,5 +1081,10 @@ ms_check_pres <- function(
   print("The following compounds do not exceed 50% presence in at least one group:") # nolint
   print(h2)
   print("Consider removing these compounds from the dataset")
-  return(h_out)
+  h_out <- list(
+    "heatmap" = h_out,
+    "input" = h1,
+    "flagged" = h2
+  )
+  return(h_out) # nolint
 }

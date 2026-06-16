@@ -378,5 +378,5 @@ ms_data_norm <- function( # nolint
     metadata(dnorm)[["Normalization method"]] <- "iSTD" # nolint
   }
   print("Normalization successful!")
-  return(dnorm)
+  return(dnorm) # nolint
 }
