@@ -8,6 +8,8 @@ ms_plot_volcano(
   d_stat,
   comp_name,
   diff_col = "Log2FC",
+  cl_col = NULL,
+  alt_col = NULL,
   p_col = "p.value",
   p_cut = 0.05,
   f_cut = 0.5,
@@ -22,6 +24,12 @@ ms_plot_volcano(
 \item{comp_name}{Comparison name, provided as a character string.}
 
 \item{diff_col}{Column name containing effect size.}
+
+\item{cl_col}{Optional variable name for coloring significant
+points based on class.}
+
+\item{alt_col}{Optional named vector of colors for manually
+specifying colors is cl_col is provided.}
 
 \item{p_col}{Column name containing adjusted p-values.}
 

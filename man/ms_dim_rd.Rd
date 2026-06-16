@@ -17,7 +17,8 @@ ms_dim_rd(
   flag_outliers = FALSE,
   outlier_calc = NULL,
   sid = NULL,
-  scale_data = TRUE
+  scale_data = TRUE,
+  ret_input = FALSE
 )
 }
 \arguments{
@@ -54,6 +55,9 @@ column for labeling outliers.}
 
 \item{scale_data}{If TRUE, data will be pareto scaled
 prior to dimension reduction.}
+
+\item{ret_input}{If TRUE, return the input data used for the
+dimension reduction plot.}
 }
 \value{
 A dimension reduction plot of the specified type.

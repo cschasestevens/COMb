@@ -7,6 +7,7 @@
 ms_plot_hm(
   exp1 = NULL,
   stat_data = NULL,
+  var_cl = NULL,
   deg_sig = FALSE,
   l_cstm = NULL,
   asy = "scaled",
@@ -24,7 +25,8 @@ ms_plot_hm(
   rn = TRUE,
   col1 = col_grad(scm = 5),
   transp = FALSE,
-  legend1 = "Abundance"
+  legend1 = "Abundance",
+  hmlinewidth = 0
 )
 }
 \arguments{
@@ -33,6 +35,8 @@ ms_plot_hm(
 \item{stat_data}{Generate heatmap based on statistical results instead
 of intensity/abundance values from a summarizedexperiment. Results
 tables should be formatted according to outputs from ms_stat_uni.}
+
+\item{var_cl}{Variable name for specifying heatmap annotation.}
 
 \item{deg_sig}{Should only compounds/features with statistically significant
 differences in intensity/abundance be plotted?}
@@ -71,6 +75,8 @@ the input data undergo no additional scaling.}
 \item{transp}{Transpose heatmap input matrix (FALSE by default).}
 
 \item{legend1}{Figure legend name.}
+
+\item{hmlinewidth}{Numeric value for heatmap cell border width.}
 }
 \value{
 A ComplexHeatmap object.

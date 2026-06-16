@@ -16,7 +16,8 @@ ms_plot_vio(
   comp,
   plab = "Relative Abundance",
   title1 = NULL,
-  show_jitter = FALSE
+  show_jitter = FALSE,
+  ret_input = FALSE
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ required if var_sum is provided.}
 \item{title1}{Plot title.}
 
 \item{show_jitter}{Show individual data points on the plot?}
+
+\item{ret_input}{If TRUE, return plot input.}
 }
 \value{
 A violin plot for the chosen treatment comparisons.
